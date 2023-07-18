@@ -1,0 +1,1942 @@
+\chapter{Creating Packages}\label{package}
+
+Data is not born tidy:
+we must cleanse it to make it serve our needs.
+Chapter~\ref{tidyverse} gave us the tools;
+here,
+we will see how to package up our work so that it can be used by others.
+
+\section{What is our starting point?}
+
+Here is a sample of data from \texttt{data/infant\_hiv.csv},
+the raw data from which the infant HIV dataset used in Chapter~\ref{tidyverse} was derived:
+We use \texttt{...} to show where substrings and ranges of rows have been left out
+to fit the data on this page:
+
+\begin{lstlisting}
+"Early Infant Diagnosis: Percentage of infants born to women living with HIV...",,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,2009,,,2010,,,2011,,,2012,,,2013,,,2014,,,2015,,,2016,,,2017,,,
+ISO3,Countries,Estimate,hi,lo,Estimate,hi,lo,Estimate,hi,lo,Estimate,hi,lo,...
+AFG,Afghanistan,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,
+ALB,Albania,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,
+DZA,Algeria,-,-,-,-,-,-,38%,42%,35%,23%,25%,21%,55%,60%,50%,27%,30%,25%,23%,25%,21%,33%,37%,31%,61%,68%,57%,
+AGO,Angola,-,-,-,3%,4%,2%,5%,7%,4%,6%,8%,5%,15%,20%,12%,10%,14%,8%,6%,8%,5%,1%,2%,1%,1%,2%,1%,
+... many more rows ...
+YEM,Yemen,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,
+ZMB,Zambia,59%,70%,53%,27%,32%,24%,70%,84%,63%,74%,88%,67%,64%,76%,57%,91%,>95%,81%,43%,52%,39%,43%,51%,39%,46%,54%,41%,
+ZWE,Zimbabwe,-,-,-,12%,15%,10%,23%,28%,20%,38%,47%,33%,57%,70%,49%,54%,67%,47%,59%,73%,51%,71%,88%,62%,65%,81%,57%,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,2009,,,2010,,,2011,,,2012,,,2013,,,2014,,,2015,,,2016,,,2017,,,
+,,Estimate,hi,lo,Estimate,hi,lo,Estimate,hi,lo,Estimate,hi,lo,...
+Region,East Asia and the Pacific,25%,30%,22%,35%,42%,29%,30%,37%,26%,32%,38%,27%,28%,34%,24%,26%,31%,22%,31%,37%,27%,30%,35%,25%,28%,33%,24%,
+,Eastern and Southern Africa,23%,29%,20%,44%,57%,37%,48%,62%,40%,54%,69%,46%,51%,65%,43%,62%,80%,53%,62%,79%,52%,54%,68%,45%,62%,80%,53%,
+,Eastern Europe and Central Asia,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,
+... several more rows ...
+,Sub-Saharan Africa,16%,22%,13%,34%,46%,28%,37%,50%,30%,43%,57%,35%,41%,54%,33%,50%,66%,41%,50%,66%,41%,45%,60%,37%,52%,69%,42%,
+,Global,17%,23%,13%,33%,45%,27%,36%,49%,29%,41%,55%,34%,40%,53%,32%,48%,64%,39%,49%,64%,40%,44%,59%,36%,51%,67%,41%,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Indicator definition: Percentage of infants born to women living with HIV... ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Note: Data are not available if country did not submit data...,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Data source: Global AIDS Monitoring 2018 and UNAIDS 2018 estimates,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+"For more information on this indicator, please visit the guidance:...",,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+"For more information on the data, visit data.unicef.org",,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+\end{lstlisting}
+
+This file is a mess.
+No, more than that, it is an affront to decency.
+Comments are mixed with data,
+values' actual indices have to be synthesized by combining column headings from the second and third rows,
+and so on.
+When we compare this with the tidy data found in \texttt{results/infant\_hiv.csv}:
+
+\begin{lstlisting}
+country,year,estimate,hi,lo
+AFG,2009,NA,NA,NA
+AFG,2010,NA,NA,NA
+AFG,2011,NA,NA,NA
+AFG,2012,NA,NA,NA
+...
+ZWE,2016,0.71,0.88,0.62
+ZWE,2017,0.65,0.81,0.57
+\end{lstlisting}
+
+\noindent
+it is clear that we have a lot of work to do.
+
+\section{How do we convert values to numbers?}\label{package-convert-to-numbers}
+
+We begin by reading the raw data into a tibble:
+
+\begin{lstlisting}
+raw <- read_csv("data/infant_hiv.csv")
+head(raw)
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: Missing column names filled in: 'X2' [2], 'X3' [3],
+'X4' [4], 'X5' [5], 'X6' [6], 'X7' [7], 'X8' [8], 'X9' [9],
+'X10' [10], 'X11' [11], 'X12' [12], 'X13' [13], 'X14' [14],
+'X15' [15], 'X16' [16], 'X17' [17], 'X18' [18], 'X19' [19],
+'X20' [20], 'X21' [21], 'X22' [22], 'X23' [23], 'X24' [24],
+'X25' [25], 'X26' [26], 'X27' [27], 'X28' [28], 'X29' [29],
+'X30' [30]
+Parsed with column specification:
+cols(
+  .default = col_character(),
+  X30 = col_logical()
+)
+See spec(...) for full column specifications.
+# A tibble: 6 x 30
+  `Early Infant D~ X2    X3    X4    X5    X6    X7    X8    X9   
+  <chr>            <chr> <chr> <chr> <chr> <chr> <chr> <chr> <chr>
+1 <NA>             <NA>  2009  <NA>  <NA>  2010  <NA>  <NA>  2011 
+2 ISO3             Coun~ Esti~ hi    lo    Esti~ hi    lo    Esti~
+3 AFG              Afgh~ -     -     -     -     -     -     -    
+4 ALB              Alba~ -     -     -     -     -     -     -    
+5 DZA              Alge~ -     -     -     -     -     -     38%  
+6 AGO              Ango~ -     -     -     3%    4%    2%    5%   
+# ... with 21 more variables: X10 <chr>, X11 <chr>, X12 <chr>,
+#   X13 <chr>, X14 <chr>, X15 <chr>, X16 <chr>, X17 <chr>,
+#   X18 <chr>, X19 <chr>, X20 <chr>, X21 <chr>, X22 <chr>,
+#   X23 <chr>, X24 <chr>, X25 <chr>, X26 <chr>, X27 <chr>,
+#   X28 <chr>, X29 <chr>, X30 <lgl>
+\end{lstlisting}
+
+All right:
+R isn't able to infer column names,
+so it uses the entire first comment string as a very long column name
+and then makes up names for the other columns.
+Looking at the file,
+the second row has years (spaced at three-column intervals)
+and the row after that has an \gref{g:iso3-country-code}{ISO3 country code},
+the country's name,
+and then ``Estimate'', ``hi'', and ``lo'' repeated for every year.
+
+We have to combine what's in the second and third rows to create tidy columns.
+Since we want the ISO3 code and the country name,
+let's add an argument to \texttt{read\_csv} to skip the first two rows:
+
+\begin{lstlisting}
+raw <- read_csv("data/infant_hiv.csv", skip = 2)
+head(raw)
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: Missing column names filled in: 'X30' [30]
+Warning: Duplicated column names deduplicated: 'Estimate' =>
+'Estimate_1' [6], 'hi' => 'hi_1' [7], 'lo' => 'lo_1' [8], 'Estimate' =>
+'Estimate_2' [9], 'hi' => 'hi_2' [10], 'lo' => 'lo_2' [11], 'Estimate' =>
+'Estimate_3' [12], 'hi' => 'hi_3' [13], 'lo' => 'lo_3' [14], 'Estimate' =>
+'Estimate_4' [15], 'hi' => 'hi_4' [16], 'lo' => 'lo_4' [17], 'Estimate' =>
+'Estimate_5' [18], 'hi' => 'hi_5' [19], 'lo' => 'lo_5' [20], 'Estimate' =>
+'Estimate_6' [21], 'hi' => 'hi_6' [22], 'lo' => 'lo_6' [23], 'Estimate' =>
+'Estimate_7' [24], 'hi' => 'hi_7' [25], 'lo' => 'lo_7' [26], 'Estimate' =>
+'Estimate_8' [27], 'hi' => 'hi_8' [28], 'lo' => 'lo_8' [29]
+Parsed with column specification:
+cols(
+  .default = col_character(),
+  X30 = col_logical()
+)
+See spec(...) for full column specifications.
+# A tibble: 6 x 30
+  ISO3  Countries Estimate hi    lo    Estimate_1 hi_1  lo_1 
+  <chr> <chr>     <chr>    <chr> <chr> <chr>      <chr> <chr>
+1 AFG   Afghanis~ -        -     -     -          -     -    
+2 ALB   Albania   -        -     -     -          -     -    
+3 DZA   Algeria   -        -     -     -          -     -    
+4 AGO   Angola    -        -     -     3%         4%    2%   
+5 AIA   Anguilla  -        -     -     -          -     -    
+6 ATG   Antigua ~ -        -     -     -          -     -    
+# ... with 22 more variables: Estimate_2 <chr>, hi_2 <chr>,
+#   lo_2 <chr>, Estimate_3 <chr>, hi_3 <chr>, lo_3 <chr>,
+#   Estimate_4 <chr>, hi_4 <chr>, lo_4 <chr>, Estimate_5 <chr>,
+#   hi_5 <chr>, lo_5 <chr>, Estimate_6 <chr>, hi_6 <chr>,
+#   lo_6 <chr>, Estimate_7 <chr>, hi_7 <chr>, lo_7 <chr>,
+#   Estimate_8 <chr>, hi_8 <chr>, lo_8 <chr>, X30 <lgl>
+\end{lstlisting}
+
+That's a bit of an improvement,
+but why are all the columns \texttt{character} instead of numbers?
+This happens because:
+
+\begin{enumerate}
+\item
+  our CSV file uses \texttt{-} (a single dash) to show missing data,
+  and
+\item
+  all of our numbers end with \texttt{\%},
+  which means those values actually \emph{are} character strings.
+\end{enumerate}
+
+Since we should never do ourselves what a library function will do for us,
+we will tackle the first problem by passing \texttt{na\ =\ c("-")} to our \texttt{read\_csv} call
+to tell the function what strings it should interpret as missing values:
+
+\begin{lstlisting}
+raw <- read_csv("data/infant_hiv.csv", skip = 2, na = c("-"))
+head(raw)
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: Missing column names filled in: 'X30' [30]
+Warning: Duplicated column names deduplicated: 'Estimate' =>
+'Estimate_1' [6], 'hi' => 'hi_1' [7], 'lo' => 'lo_1' [8], 'Estimate' =>
+'Estimate_2' [9], 'hi' => 'hi_2' [10], 'lo' => 'lo_2' [11], 'Estimate' =>
+'Estimate_3' [12], 'hi' => 'hi_3' [13], 'lo' => 'lo_3' [14], 'Estimate' =>
+'Estimate_4' [15], 'hi' => 'hi_4' [16], 'lo' => 'lo_4' [17], 'Estimate' =>
+'Estimate_5' [18], 'hi' => 'hi_5' [19], 'lo' => 'lo_5' [20], 'Estimate' =>
+'Estimate_6' [21], 'hi' => 'hi_6' [22], 'lo' => 'lo_6' [23], 'Estimate' =>
+'Estimate_7' [24], 'hi' => 'hi_7' [25], 'lo' => 'lo_7' [26], 'Estimate' =>
+'Estimate_8' [27], 'hi' => 'hi_8' [28], 'lo' => 'lo_8' [29]
+Parsed with column specification:
+cols(
+  .default = col_character(),
+  X30 = col_logical()
+)
+See spec(...) for full column specifications.
+# A tibble: 6 x 30
+  ISO3  Countries Estimate hi    lo    Estimate_1 hi_1  lo_1 
+  <chr> <chr>     <chr>    <chr> <chr> <chr>      <chr> <chr>
+1 AFG   Afghanis~ <NA>     <NA>  <NA>  <NA>       <NA>  <NA> 
+2 ALB   Albania   <NA>     <NA>  <NA>  <NA>       <NA>  <NA> 
+3 DZA   Algeria   <NA>     <NA>  <NA>  <NA>       <NA>  <NA> 
+4 AGO   Angola    <NA>     <NA>  <NA>  3%         4%    2%   
+5 AIA   Anguilla  <NA>     <NA>  <NA>  <NA>       <NA>  <NA> 
+6 ATG   Antigua ~ <NA>     <NA>  <NA>  <NA>       <NA>  <NA> 
+# ... with 22 more variables: Estimate_2 <chr>, hi_2 <chr>,
+#   lo_2 <chr>, Estimate_3 <chr>, hi_3 <chr>, lo_3 <chr>,
+#   Estimate_4 <chr>, hi_4 <chr>, lo_4 <chr>, Estimate_5 <chr>,
+#   hi_5 <chr>, lo_5 <chr>, Estimate_6 <chr>, hi_6 <chr>,
+#   lo_6 <chr>, Estimate_7 <chr>, hi_7 <chr>, lo_7 <chr>,
+#   Estimate_8 <chr>, hi_8 <chr>, lo_8 <chr>, X30 <lgl>
+\end{lstlisting}
+
+We now need to strip the percentage signs and convert what's left to numeric values.
+To simplify our lives,
+let's get the \texttt{ISO3} and \texttt{Countries} columns out of the way.
+We will save the ISO3 values for later use
+(and because it will illustrate a point about data hygiene that we want to make later,
+but which we don't want to reveal just yet).
+Rather than typing out the names of all the columns we want to keep in the call to \texttt{select},
+we negate the ones we want to discard:
+
+\begin{lstlisting}
+countries <- raw$ISO3
+body <- raw %>%
+  select(-ISO3, -Countries)
+head(body)
+\end{lstlisting}
+
+\begin{lstlisting}
+# A tibble: 6 x 28
+  Estimate hi    lo    Estimate_1 hi_1  lo_1  Estimate_2 hi_2  lo_2 
+  <chr>    <chr> <chr> <chr>      <chr> <chr> <chr>      <chr> <chr>
+1 <NA>     <NA>  <NA>  <NA>       <NA>  <NA>  <NA>       <NA>  <NA> 
+2 <NA>     <NA>  <NA>  <NA>       <NA>  <NA>  <NA>       <NA>  <NA> 
+3 <NA>     <NA>  <NA>  <NA>       <NA>  <NA>  38%        42%   35%  
+4 <NA>     <NA>  <NA>  3%         4%    2%    5%         7%    4%   
+5 <NA>     <NA>  <NA>  <NA>       <NA>  <NA>  <NA>       <NA>  <NA> 
+6 <NA>     <NA>  <NA>  <NA>       <NA>  <NA>  <NA>       <NA>  <NA> 
+# ... with 19 more variables: Estimate_3 <chr>, hi_3 <chr>,
+#   lo_3 <chr>, Estimate_4 <chr>, hi_4 <chr>, lo_4 <chr>,
+#   Estimate_5 <chr>, hi_5 <chr>, lo_5 <chr>, Estimate_6 <chr>,
+#   hi_6 <chr>, lo_6 <chr>, Estimate_7 <chr>, hi_7 <chr>,
+#   lo_7 <chr>, Estimate_8 <chr>, hi_8 <chr>, lo_8 <chr>, X30 <lgl>
+\end{lstlisting}
+
+But wait.
+Weren't there some aggregate lines of data at the end of our input?
+What happened to them?
+
+\begin{lstlisting}
+tail(countries, n = 25)
+\end{lstlisting}
+
+\begin{lstlisting}
+ [1] "YEM"
+ [2] "ZMB"
+ [3] "ZWE"
+ [4] ""
+ [5] ""
+ [6] ""
+ [7] "Region"
+ [8] ""
+ [9] ""
+[10] ""
+[11] ""
+[12] ""
+[13] ""
+[14] ""
+[15] ""
+[16] "Super-region"
+[17] ""
+[18] ""
+[19] ""
+[20] ""
+[21] "Indicator definition: Percentage of infants born to women living with HIV receiving a virological test for HIV within two months of birth"
+[22] "Note: Data are not available if country did not submit data to Global AIDS Monitoring or if estimates of pregnant women living with HIV are not published."
+[23] "Data source: Global AIDS Monitoring 2018 and UNAIDS 2018 estimates"
+[24] "For more information on this indicator, please visit the guidance: http://www.unaids.org/sites/default/files/media_asset/global-aids-monitoring_en.pdf"
+[25] "For more information on the data, visit data.unicef.org"
+\end{lstlisting}
+
+At this point the actor playing our part in the film adaptation of this book sighs heavily.
+How are we to trim this?
+Since there is only one file,
+we can open the file with an editor or spreadsheet program,
+scroll down,
+check the line number,
+and slice there.
+This is a very bad idea if we're planning to use this script on other files:
+we should instead look for the first blank line or the entry for Zimbabwe or something like that.
+We will tackle that problem in the exercises;
+for now,
+the sinful approach gives us this:
+
+\begin{lstlisting}
+num_rows <- 192
+raw <- read_csv("data/infant_hiv.csv", skip = 2, na = c("-"))
+sliced <- slice(raw, 1:num_rows)
+countries <- sliced$ISO3
+tail(countries, n = 5)
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: Missing column names filled in: 'X30' [30]
+Warning: Duplicated column names deduplicated: 'Estimate' =>
+'Estimate_1' [6], 'hi' => 'hi_1' [7], 'lo' => 'lo_1' [8], 'Estimate' =>
+'Estimate_2' [9], 'hi' => 'hi_2' [10], 'lo' => 'lo_2' [11], 'Estimate' =>
+'Estimate_3' [12], 'hi' => 'hi_3' [13], 'lo' => 'lo_3' [14], 'Estimate' =>
+'Estimate_4' [15], 'hi' => 'hi_4' [16], 'lo' => 'lo_4' [17], 'Estimate' =>
+'Estimate_5' [18], 'hi' => 'hi_5' [19], 'lo' => 'lo_5' [20], 'Estimate' =>
+'Estimate_6' [21], 'hi' => 'hi_6' [22], 'lo' => 'lo_6' [23], 'Estimate' =>
+'Estimate_7' [24], 'hi' => 'hi_7' [25], 'lo' => 'lo_7' [26], 'Estimate' =>
+'Estimate_8' [27], 'hi' => 'hi_8' [28], 'lo' => 'lo_8' [29]
+Parsed with column specification:
+cols(
+  .default = col_character(),
+  X30 = col_logical()
+)
+See spec(...) for full column specifications.
+[1] "VEN" "VNM" "YEM" "ZMB" "ZWE"
+\end{lstlisting}
+
+Notice that we're counting rows \emph{not including} the two we're skipping,
+which means that the 192 in the call to \texttt{slice} above
+corresponds to row 195 of our original data:
+195, not 194, because we're using the first row of unskipped data as headers and yes,
+you are in fact making that faint whimpering sound you now hear.
+You will hear it often when dealing with real-world data{\ldots}
+
+Notice also that we are slicing and \emph{then} extracting the column containing the countries.
+In an earlier version of this lesson we peeled off the ISO3 country codes,
+sliced that vector,
+and then wondered why our main table still had unwanted data at the end.
+Vigilance, friends:
+vigilance shall be our watchword,
+and in light of that,
+we shall first test our plan for converting our strings to numbers:
+
+\begin{lstlisting}
+fixture <- c(NA, "1%", "10%", "100%")
+result <- as.numeric(str_replace(fixture, "%", "")) / 100
+result
+\end{lstlisting}
+
+\begin{lstlisting}
+[1]   NA 0.01 0.10 1.00
+\end{lstlisting}
+
+\noindent
+And as a further check:
+
+\begin{lstlisting}
+is.numeric(result)
+\end{lstlisting}
+
+\begin{lstlisting}
+[1] TRUE
+\end{lstlisting}
+
+\noindent
+The function \texttt{is.numeric} is \texttt{TRUE} for both \texttt{NA} and actual numbers,
+so it looks like we're doing the right thing here.
+Our updated conversion script is now:
+
+\begin{lstlisting}
+raw <- read_csv("data/infant_hiv.csv", skip = 2, na = c("-"))
+sliced <- slice(raw, 1:192)
+countries <- sliced$ISO3
+body <- raw %>%
+  select(-ISO3, -Countries)
+numbers <- as.numeric(str_replace(body, "%", "")) / 100
+is.numeric(numbers)
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: Missing column names filled in: 'X30' [30]
+Warning: Duplicated column names deduplicated: 'Estimate' =>
+'Estimate_1' [6], 'hi' => 'hi_1' [7], 'lo' => 'lo_1' [8], 'Estimate' =>
+'Estimate_2' [9], 'hi' => 'hi_2' [10], 'lo' => 'lo_2' [11], 'Estimate' =>
+'Estimate_3' [12], 'hi' => 'hi_3' [13], 'lo' => 'lo_3' [14], 'Estimate' =>
+'Estimate_4' [15], 'hi' => 'hi_4' [16], 'lo' => 'lo_4' [17], 'Estimate' =>
+'Estimate_5' [18], 'hi' => 'hi_5' [19], 'lo' => 'lo_5' [20], 'Estimate' =>
+'Estimate_6' [21], 'hi' => 'hi_6' [22], 'lo' => 'lo_6' [23], 'Estimate' =>
+'Estimate_7' [24], 'hi' => 'hi_7' [25], 'lo' => 'lo_7' [26], 'Estimate' =>
+'Estimate_8' [27], 'hi' => 'hi_8' [28], 'lo' => 'lo_8' [29]
+Parsed with column specification:
+cols(
+  .default = col_character(),
+  X30 = col_logical()
+)
+See spec(...) for full column specifications.
+Warning in stri_replace_first_regex(string, pattern,
+fix_replacement(replacement), : argument is not an atomic vector; coercing
+Warning: NAs introduced by coercion
+[1] TRUE
+\end{lstlisting}
+
+Bother.
+It appears that \texttt{str\_replace} expects an atomic vector rather than a tibble.
+It worked for our test case because that was a character vector,
+but tibbles have more structure than that.
+
+The second complaint is that \texttt{NA}s were introduced,
+which is troubling because we didn't get a complaint when we had actual \texttt{NA}s in our data.
+However,
+\texttt{is.numeric} tells us that all of our results are numbers.
+Let's take a closer look:
+
+\begin{lstlisting}
+is_tibble(body)
+\end{lstlisting}
+
+\begin{lstlisting}
+[1] TRUE
+\end{lstlisting}
+
+\begin{lstlisting}
+is_tibble(numbers)
+\end{lstlisting}
+
+\begin{lstlisting}
+[1] FALSE
+\end{lstlisting}
+
+Perdition.
+After browsing the data,
+we realize that some entries are the string \texttt{"\textgreater{}95\%"},
+i.e.,
+there is a greater-than sign as well as a percentage in the text.
+We will need to regularize those in order to do our conversions correctly.
+
+Before that,
+however,
+let's see if we can get rid of the percent signs.
+The obvious way is is to use \texttt{str\_replace(body,\ "\%",\ "")},
+but that doesn't work:
+\texttt{str\_replace} works on vectors,
+but a tibble is a list of vectors.
+Instead,
+we can use a \gref{g:higher-order-function}{higher-order function} called \texttt{map}
+to apply the function \texttt{str\_replace} to each column in turn to get rid of the percent signs:
+
+\begin{lstlisting}
+raw <- read_csv("data/infant_hiv.csv", skip = 2, na = c("-"))
+sliced <- slice(raw, 1:192)
+countries <- sliced$ISO3
+body <- raw %>%
+  select(-ISO3, -Countries)
+trimmed <- map(body, str_replace, pattern = "%", replacement = "")
+head(trimmed)
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: Missing column names filled in: 'X30' [30]
+Warning: Duplicated column names deduplicated: 'Estimate' =>
+'Estimate_1' [6], 'hi' => 'hi_1' [7], 'lo' => 'lo_1' [8], 'Estimate' =>
+'Estimate_2' [9], 'hi' => 'hi_2' [10], 'lo' => 'lo_2' [11], 'Estimate' =>
+'Estimate_3' [12], 'hi' => 'hi_3' [13], 'lo' => 'lo_3' [14], 'Estimate' =>
+'Estimate_4' [15], 'hi' => 'hi_4' [16], 'lo' => 'lo_4' [17], 'Estimate' =>
+'Estimate_5' [18], 'hi' => 'hi_5' [19], 'lo' => 'lo_5' [20], 'Estimate' =>
+'Estimate_6' [21], 'hi' => 'hi_6' [22], 'lo' => 'lo_6' [23], 'Estimate' =>
+'Estimate_7' [24], 'hi' => 'hi_7' [25], 'lo' => 'lo_7' [26], 'Estimate' =>
+'Estimate_8' [27], 'hi' => 'hi_8' [28], 'lo' => 'lo_8' [29]
+Parsed with column specification:
+cols(
+  .default = col_character(),
+  X30 = col_logical()
+)
+See spec(...) for full column specifications.
+$Estimate
+  [1] NA         NA         NA         NA         NA        
+  [6] NA         NA         NA         NA         NA        
+ [11] "26"       NA         NA         NA         NA        
+ [16] ">95"      NA         "77"       NA         NA        
+ [21] "7"        NA         NA         "25"       NA        
+ [26] NA         "3"        NA         ">95"      NA        
+... many more rows ...
+\end{lstlisting}
+
+\noindent
+Perdition once again.
+The problem now is that \texttt{map} produces a raw list as output.
+The function we want is \texttt{map\_dfr},
+which maps a function across the rows of a tibble and returns a tibble as a result.
+(There is a corresponding function \texttt{map\_dfc} that maps a function across columns.)
+
+\begin{lstlisting}
+raw <- read_csv("data/infant_hiv.csv", skip = 2, na = c("-"))
+sliced <- slice(raw, 1:192)
+countries <- sliced$ISO3
+body <- raw %>%
+  select(-ISO3, -Countries)
+trimmed <- map_dfr(body, str_replace, pattern = "%", replacement = "")
+head(trimmed)
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: Missing column names filled in: 'X30' [30]
+Warning: Duplicated column names deduplicated: 'Estimate' =>
+'Estimate_1' [6], 'hi' => 'hi_1' [7], 'lo' => 'lo_1' [8], 'Estimate' =>
+'Estimate_2' [9], 'hi' => 'hi_2' [10], 'lo' => 'lo_2' [11], 'Estimate' =>
+'Estimate_3' [12], 'hi' => 'hi_3' [13], 'lo' => 'lo_3' [14], 'Estimate' =>
+'Estimate_4' [15], 'hi' => 'hi_4' [16], 'lo' => 'lo_4' [17], 'Estimate' =>
+'Estimate_5' [18], 'hi' => 'hi_5' [19], 'lo' => 'lo_5' [20], 'Estimate' =>
+'Estimate_6' [21], 'hi' => 'hi_6' [22], 'lo' => 'lo_6' [23], 'Estimate' =>
+'Estimate_7' [24], 'hi' => 'hi_7' [25], 'lo' => 'lo_7' [26], 'Estimate' =>
+'Estimate_8' [27], 'hi' => 'hi_8' [28], 'lo' => 'lo_8' [29]
+Parsed with column specification:
+cols(
+  .default = col_character(),
+  X30 = col_logical()
+)
+See spec(...) for full column specifications.
+# A tibble: 6 x 28
+  Estimate hi    lo    Estimate_1 hi_1  lo_1  Estimate_2 hi_2  lo_2 
+  <chr>    <chr> <chr> <chr>      <chr> <chr> <chr>      <chr> <chr>
+1 <NA>     <NA>  <NA>  <NA>       <NA>  <NA>  <NA>       <NA>  <NA> 
+2 <NA>     <NA>  <NA>  <NA>       <NA>  <NA>  <NA>       <NA>  <NA> 
+3 <NA>     <NA>  <NA>  <NA>       <NA>  <NA>  38         42    35   
+4 <NA>     <NA>  <NA>  3          4     2     5          7     4    
+5 <NA>     <NA>  <NA>  <NA>       <NA>  <NA>  <NA>       <NA>  <NA> 
+6 <NA>     <NA>  <NA>  <NA>       <NA>  <NA>  <NA>       <NA>  <NA> 
+# ... with 19 more variables: Estimate_3 <chr>, hi_3 <chr>, lo_3 <chr>,
+#   Estimate_4 <chr>, hi_4 <chr>, lo_4 <chr>, Estimate_5 <chr>,
+#   hi_5 <chr>, lo_5 <chr>, Estimate_6 <chr>, hi_6 <chr>, lo_6 <chr>,
+#   Estimate_7 <chr>, hi_7 <chr>, lo_7 <chr>, Estimate_8 <chr>,
+#   hi_8 <chr>, lo_8 <chr>, X30 <chr>
+\end{lstlisting}
+
+Now to tackle those \texttt{"{\textgreater}95\%"} values.
+It turns out that \texttt{str\_replace} uses \gref{g:regular-expression}{regular expressions},
+not just direct string matches,
+so we can get rid of the \texttt{\textgreater{}} at the same time as we get rid of the \texttt{\%}.
+We will check by looking at the first \texttt{Estimate} column,
+which we noticed earlier had at least one \texttt{"\textgreater{}95\%"} in it:
+
+\begin{lstlisting}
+raw <- read_csv("data/infant_hiv.csv", skip = 2, na = c("-"))
+sliced <- slice(raw, 1:192)
+countries <- sliced$ISO3
+body <- raw %>%
+  select(-ISO3, -Countries)
+trimmed <- map_dfr(body, str_replace, pattern = ">?(\\d+)%", replacement = "\\1")
+trimmed$Estimate
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: Missing column names filled in: 'X30' [30]
+Warning: Duplicated column names deduplicated: 'Estimate' =>
+'Estimate_1' [6], 'hi' => 'hi_1' [7], 'lo' => 'lo_1' [8], 'Estimate' =>
+'Estimate_2' [9], 'hi' => 'hi_2' [10], 'lo' => 'lo_2' [11], 'Estimate' =>
+'Estimate_3' [12], 'hi' => 'hi_3' [13], 'lo' => 'lo_3' [14], 'Estimate' =>
+'Estimate_4' [15], 'hi' => 'hi_4' [16], 'lo' => 'lo_4' [17], 'Estimate' =>
+'Estimate_5' [18], 'hi' => 'hi_5' [19], 'lo' => 'lo_5' [20], 'Estimate' =>
+'Estimate_6' [21], 'hi' => 'hi_6' [22], 'lo' => 'lo_6' [23], 'Estimate' =>
+'Estimate_7' [24], 'hi' => 'hi_7' [25], 'lo' => 'lo_7' [26], 'Estimate' =>
+'Estimate_8' [27], 'hi' => 'hi_8' [28], 'lo' => 'lo_8' [29]
+Parsed with column specification:
+cols(
+  .default = col_character(),
+  X30 = col_logical()
+)
+See spec(...) for full column specifications.
+  [1] NA         NA         NA         NA         NA        
+  [6] NA         NA         NA         NA         NA        
+ [11] "26"       NA         NA         NA         NA        
+ [16] "95"       NA         "77"       NA         NA        
+ [21] "7"        NA         NA         "25"       NA        
+... many more rows ...
+\end{lstlisting}
+
+Excellent.
+We can now use \texttt{map\_dfr} to convert the columns to numeric percentages
+using an \gref{g:anonymous-function}{anonymous function} that we define inside the \texttt{map\_dfr} call itself:
+
+\begin{lstlisting}
+raw <- read_csv("data/infant_hiv.csv", skip = 2, na = c("-"))
+sliced <- slice(raw, 1:192)
+countries <- sliced$ISO3
+body <- raw %>%
+  select(-ISO3, -Countries)
+trimmed <- map_dfr(body, str_replace, pattern = ">?(\\d+)%", replacement = "\\1")
+percents <- map_dfr(trimmed, function(col) as.numeric(col) / 100)
+head(percents)
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: Missing column names filled in: 'X30' [30]
+Warning: Duplicated column names deduplicated: 'Estimate' =>
+'Estimate_1' [6], 'hi' => 'hi_1' [7], 'lo' => 'lo_1' [8], 'Estimate' =>
+'Estimate_2' [9], 'hi' => 'hi_2' [10], 'lo' => 'lo_2' [11], 'Estimate' =>
+'Estimate_3' [12], 'hi' => 'hi_3' [13], 'lo' => 'lo_3' [14], 'Estimate' =>
+'Estimate_4' [15], 'hi' => 'hi_4' [16], 'lo' => 'lo_4' [17], 'Estimate' =>
+'Estimate_5' [18], 'hi' => 'hi_5' [19], 'lo' => 'lo_5' [20], 'Estimate' =>
+'Estimate_6' [21], 'hi' => 'hi_6' [22], 'lo' => 'lo_6' [23], 'Estimate' =>
+'Estimate_7' [24], 'hi' => 'hi_7' [25], 'lo' => 'lo_7' [26], 'Estimate' =>
+'Estimate_8' [27], 'hi' => 'hi_8' [28], 'lo' => 'lo_8' [29]
+Parsed with column specification:
+cols(
+  .default = col_character(),
+  X30 = col_logical()
+)
+See spec(...) for full column specifications.
+Warning in .f(.x[[i]], ...): NAs introduced by coercion
+Warning in .f(.x[[i]], ...): NAs introduced by coercion
+Warning in .f(.x[[i]], ...): NAs introduced by coercion
+... many more warnings ...
+Warning in .f(.x[[i]], ...): NAs introduced by coercion
+Warning in .f(.x[[i]], ...): NAs introduced by coercion
+Warning in .f(.x[[i]], ...): NAs introduced by coercion
+Warning in .f(.x[[i]], ...): NAs introduced by coercion
+# A tibble: 6 x 28
+  Estimate    hi    lo Estimate_1  hi_1  lo_1 Estimate_2  hi_2  lo_2
+     <dbl> <dbl> <dbl>      <dbl> <dbl> <dbl>      <dbl> <dbl> <dbl>
+1       NA    NA    NA      NA    NA    NA         NA    NA    NA   
+2       NA    NA    NA      NA    NA    NA         NA    NA    NA   
+3       NA    NA    NA      NA    NA    NA          0.38  0.42  0.35
+4       NA    NA    NA       0.03  0.04  0.02       0.05  0.07  0.04
+5       NA    NA    NA      NA    NA    NA         NA    NA    NA   
+6       NA    NA    NA      NA    NA    NA         NA    NA    NA   
+# ... with 19 more variables: Estimate_3 <dbl>, hi_3 <dbl>, lo_3 <dbl>,
+#   Estimate_4 <dbl>, hi_4 <dbl>, lo_4 <dbl>, Estimate_5 <dbl>,
+#   hi_5 <dbl>, lo_5 <dbl>, Estimate_6 <dbl>, hi_6 <dbl>, lo_6 <dbl>,
+#   Estimate_7 <dbl>, hi_7 <dbl>, lo_7 <dbl>, Estimate_8 <dbl>,
+#   hi_8 <dbl>, lo_8 <dbl>, X30 <dbl>
+\end{lstlisting}
+
+Those warnings tell us that something is still not right.
+The first \texttt{Estimates} column looks all right,
+so let's have a look at the second column:
+
+\begin{lstlisting}
+trimmed$hi
+\end{lstlisting}
+
+\begin{lstlisting}
+  [1] NA   NA   NA   NA   NA   NA   NA   NA   NA   NA   "35" NA  
+ [13] NA   NA   NA   "95" NA   "89" NA   NA   "10" NA   NA   "35"
+ [25] NA   NA   "5"  NA   "95" NA   "36" NA   "1"  NA   NA   NA  
+ [37] "6"  NA   "12" NA   "95" NA   NA   "95" NA   NA   NA   NA  
+ [49] NA   NA   NA   "36" "1"  "4"  NA   NA   NA   NA   "6"  NA  
+... many more rows ...
+[157] NA   NA   NA   NA   NA   NA   "11" NA   NA   NA   NA   "1" 
+[169] NA   NA   NA   "12" NA   NA   NA   NA   NA   NA   "9"  "95"
+[181] NA   NA   "16" NA   NA   "1"  NA   NA   NA   NA   "70" NA  
+[193] ""   ""   "hi" "30" "29" NA   "32" "2"  NA   "2"  "12" NA  
+[205] "9"  "89" "22" "23" ""   ""   ""   ""   ""   ""  
+\end{lstlisting}
+
+Where are the empty strings toward the end of \texttt{trimmed\$hi} coming from?
+Let's backtrack by examining the \texttt{hi} column of each of our intermediate variables
+interactively in the console{\ldots}
+
+{\ldots}and there's our bug.
+We are creating a variable called \texttt{sliced} that has only the rows we care about,
+but then using the full table in \texttt{raw} to create \texttt{body}.
+It's a simple mistake,
+and one that could easily have slipped by us.
+Here is our revised script:
+
+\begin{lstlisting}
+raw <- read_csv("data/infant_hiv.csv", skip = 2, na = c("-"))
+sliced <- slice(raw, 1:192)
+countries <- sliced$ISO3
+body <- sliced %>%
+  select(-ISO3, -Countries)
+trimmed <- map_dfr(body, str_replace, pattern = ">?(\\d+)%", replacement = "\\1")
+percents <- map_dfr(trimmed, function(col) as.numeric(col) / 100)
+\end{lstlisting}
+
+\noindent
+and here are the checks on the head:
+
+\begin{lstlisting}
+head(percents)
+\end{lstlisting}
+
+\begin{lstlisting}
+# A tibble: 6 x 28
+  Estimate    hi    lo Estimate_1  hi_1  lo_1 Estimate_2  hi_2  lo_2
+     <dbl> <dbl> <dbl>      <dbl> <dbl> <dbl>      <dbl> <dbl> <dbl>
+1       NA    NA    NA      NA    NA    NA         NA    NA    NA   
+2       NA    NA    NA      NA    NA    NA         NA    NA    NA   
+3       NA    NA    NA      NA    NA    NA          0.38  0.42  0.35
+4       NA    NA    NA       0.03  0.04  0.02       0.05  0.07  0.04
+5       NA    NA    NA      NA    NA    NA         NA    NA    NA   
+6       NA    NA    NA      NA    NA    NA         NA    NA    NA   
+# ... with 19 more variables: Estimate_3 <dbl>, hi_3 <dbl>, lo_3 <dbl>,
+#   Estimate_4 <dbl>, hi_4 <dbl>, lo_4 <dbl>, Estimate_5 <dbl>,
+#   hi_5 <dbl>, lo_5 <dbl>, Estimate_6 <dbl>, hi_6 <dbl>, lo_6 <dbl>,
+#   Estimate_7 <dbl>, hi_7 <dbl>, lo_7 <dbl>, Estimate_8 <dbl>,
+#   hi_8 <dbl>, lo_8 <dbl>, X30 <dbl>
+\end{lstlisting}
+
+\noindent
+and tail:
+
+\begin{lstlisting}
+tail(percents)
+\end{lstlisting}
+
+\begin{lstlisting}
+# A tibble: 6 x 28
+  Estimate    hi    lo Estimate_1  hi_1  lo_1 Estimate_2  hi_2  lo_2
+     <dbl> <dbl> <dbl>      <dbl> <dbl> <dbl>      <dbl> <dbl> <dbl>
+1    NA     NA   NA         NA    NA    NA         NA    NA    NA   
+2    NA     NA   NA         NA    NA    NA         NA    NA    NA   
+3    NA     NA   NA         NA    NA    NA          0.31  0.37  0.26
+4    NA     NA   NA         NA    NA    NA         NA    NA    NA   
+5     0.59   0.7  0.53       0.27  0.32  0.24       0.7   0.84  0.63
+6    NA     NA   NA          0.12  0.15  0.1        0.23  0.28  0.2 
+# ... with 19 more variables: Estimate_3 <dbl>, hi_3 <dbl>, lo_3 <dbl>,
+#   Estimate_4 <dbl>, hi_4 <dbl>, lo_4 <dbl>, Estimate_5 <dbl>,
+#   hi_5 <dbl>, lo_5 <dbl>, Estimate_6 <dbl>, hi_6 <dbl>, lo_6 <dbl>,
+#   Estimate_7 <dbl>, hi_7 <dbl>, lo_7 <dbl>, Estimate_8 <dbl>,
+#   hi_8 <dbl>, lo_8 <dbl>, X30 <dbl>
+\end{lstlisting}
+
+Comparing this to the raw data file convinces us that yes,
+we are now converting the percentages properly,
+which means we are halfway home.
+
+\section{How do we reorganize the columns?}
+
+We now have numeric values in \texttt{percents} and corresponding ISO3 codes in \texttt{countries}.
+What we do \emph{not} have is tidy data:
+countries are not associated with records,
+years are not recorded at all,
+and the column headers for \texttt{percents} have mostly been manufactured for us by R.
+We must now sew these parts together like Dr.~Frankenstein's trusty mentor Igor
+(who, like so many in science, did most of the actual work but was given only crumbs of credit).
+
+We could write a loop to grab three columns at a time and relabel them,
+but a more concise solution makes use of a pair of functions called \texttt{pivot\_longer} and \texttt{separate}.
+\texttt{pivot\_longer} takes multiple columns and collapses them into two,
+one of which holds a key and the other of which holds a value.
+To show how it works,
+let's create a small tibble by hand using the function \texttt{tribble}.
+The first few arguments use \texttt{\textasciitilde} as a \gref{g:prefix-operator}{prefix operator} to define columns names;
+all of the other values are then put into a tibble with those columns:
+
+\begin{lstlisting}
+small <- tribble(
+  ~ISO, ~est, ~hi, ~lo,
+  'ABC', 0.25, 0.3, 0.2,
+  'DEF', 0.55, 0.6, 0.5
+)
+small
+\end{lstlisting}
+
+\begin{lstlisting}
+# A tibble: 2 x 4
+  ISO     est    hi    lo
+  <chr> <dbl> <dbl> <dbl>
+1 ABC    0.25   0.3   0.2
+2 DEF    0.55   0.6   0.5
+\end{lstlisting}
+
+We can now use \texttt{pivot\_longer}
+to rearrange the data in \texttt{est}, \texttt{hi}, and \texttt{lo}:
+
+\begin{lstlisting}
+small %>%
+  pivot_longer(cols = c(est, hi, lo), names_to = "kind", values_to = "reported")
+\end{lstlisting}
+
+\begin{lstlisting}
+# A tibble: 6 x 3
+  ISO   kind  reported
+  <chr> <chr>    <dbl>
+1 ABC   est       0.25
+2 ABC   hi        0.3 
+3 ABC   lo        0.2 
+4 DEF   est       0.55
+5 DEF   hi        0.6 
+6 DEF   lo        0.5 
+\end{lstlisting}
+
+The \texttt{cols} parameter tells \texttt{pivot\_longer} which columns to rearrange.
+The new column specified by \texttt{names\_to} gets the old column titles
+(in our case, \texttt{est}, \texttt{hi}, and \texttt{lo}),
+while the new column specified by \texttt{values\_to} gets the values.
+The result is a table which is longer and narrower than the original,
+which is what inspired the function's name\footnote{
+  Previous versions of the tidyverse called this function \texttt{gather},
+  but many users found that name confusing.}.
+
+The other tool we need to rearrange our data is \texttt{separate},
+which splits one column into two.
+For example,
+if we have the year and the heading type in a single column:
+
+\begin{lstlisting}
+single <- tribble(
+  ~combined, ~value,
+  '2009-est', 123,
+  '2009-hi',  456,
+  '2009-lo',  789
+)
+\end{lstlisting}
+
+\noindent
+we can get the year and the heading into separate columns by separating on the \texttt{-} character:
+
+\begin{lstlisting}
+single %>%
+  separate(combined, sep = "-", c("year", "kind"))
+\end{lstlisting}
+
+\begin{lstlisting}
+# A tibble: 3 x 3
+  year  kind  value
+  <chr> <chr> <dbl>
+1 2009  est     123
+2 2009  hi      456
+3 2009  lo      789
+\end{lstlisting}
+
+Our strategy is therefore going to be:
+
+\begin{enumerate}
+\item
+  Replace the double column headers in the existing data with a single header
+  that combines the year with the kind.
+\item
+  Gather the data so that the year-kind values are in a single column.
+\item
+  Split that column.
+\end{enumerate}
+
+We've seen the tools we need for the second and third step;
+the first involves a little bit of list manipulation.
+Let's start by repeating \texttt{"est"}, \texttt{"hi"}, and \texttt{"lo"} as many times as we need them:
+
+\begin{lstlisting}
+num_years <- 1 + 2017 - 2009
+kinds <- rep(c("est", "hi", "lo"), num_years)
+kinds
+\end{lstlisting}
+
+\begin{lstlisting}
+ [1] "est" "hi"  "lo"  "est" "hi"  "lo"  "est" "hi"  "lo"  "est" "hi" 
+[12] "lo"  "est" "hi"  "lo"  "est" "hi"  "lo"  "est" "hi"  "lo"  "est"
+[23] "hi"  "lo"  "est" "hi"  "lo" 
+\end{lstlisting}
+
+\noindent
+As you can probably guess from its name,
+\texttt{rep} repeats things,
+and as noted previously,
+a vector of vectors is flattened into a single vector,
+so what an innocent might expect to be \texttt{c(c('est', 'hi', 'lo'), c('est', 'hi', 'lo))}
+automatically becomes \texttt{c('est', 'hi', 'lo', 'est', 'hi', 'lo)}.
+
+What about the years?
+We want to wind up with:
+
+\begin{lstlisting}
+c("2009", "2009" "2009", "2010", "2010", "2010", ...)
+\end{lstlisting}
+
+\noindent
+i.e., with each year repeated three times.
+\texttt{rep} won't do this,
+but we can get there with \texttt{map}:
+
+\begin{lstlisting}
+years <- map(2009:2017, rep, 3)
+years
+\end{lstlisting}
+
+\begin{lstlisting}
+[[1]]
+[1] 2009 2009 2009
+
+[[2]]
+[1] 2010 2010 2010
+
+[[3]]
+[1] 2011 2011 2011
+
+[[4]]
+[1] 2012 2012 2012
+
+[[5]]
+[1] 2013 2013 2013
+
+[[6]]
+[1] 2014 2014 2014
+
+[[7]]
+[1] 2015 2015 2015
+
+[[8]]
+[1] 2016 2016 2016
+
+[[9]]
+[1] 2017 2017 2017
+\end{lstlisting}
+
+That's almost right,
+but \texttt{map} hasn't flattened the list for us.
+Luckily,
+we can use \texttt{unlist} to do that:
+
+\begin{lstlisting}
+years <- map(2009:2017, rep, 3) %>% unlist()
+years
+\end{lstlisting}
+
+\begin{lstlisting}
+ [1] 2009 2009 2009 2010 2010 2010 2011 2011 2011 2012 2012 2012 2013
+[14] 2013 2013 2014 2014 2014 2015 2015 2015 2016 2016 2016 2017 2017
+[27] 2017
+\end{lstlisting}
+
+We can now combine the years and kinds
+by pasting the two vectors together with \texttt{"-"} as a separator:
+
+\begin{lstlisting}
+headers <- paste(years, kinds, sep = "-")
+headers
+\end{lstlisting}
+
+\begin{lstlisting}
+ [1] "2009-est" "2009-hi"  "2009-lo"  "2010-est" "2010-hi" 
+ [6] "2010-lo"  "2011-est" "2011-hi"  "2011-lo"  "2012-est"
+[11] "2012-hi"  "2012-lo"  "2013-est" "2013-hi"  "2013-lo" 
+[16] "2014-est" "2014-hi"  "2014-lo"  "2015-est" "2015-hi" 
+[21] "2015-lo"  "2016-est" "2016-hi"  "2016-lo"  "2017-est"
+[26] "2017-hi"  "2017-lo" 
+\end{lstlisting}
+
+\noindent
+Remember,
+everything in R is a vector and most functions are vectorized,
+so if we give \texttt{paste} two vectors to combine,
+it will paste corresponding elements together and give us a vector result.
+
+Let's use this to relabel the columns of \texttt{percents}
+(which holds our data without the ISO country codes):
+
+\begin{lstlisting}
+names(percents) <- headers
+percents
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: The `names` must have length 28, not 27.
+This warning is displayed once per session.
+# A tibble: 192 x 28
+   `2009-est` `2009-hi` `2009-lo` `2010-est` `2010-hi` `2010-lo`
+        <dbl>     <dbl>     <dbl>      <dbl>     <dbl>     <dbl>
+ 1         NA        NA        NA      NA        NA        NA   
+ 2         NA        NA        NA      NA        NA        NA   
+ 3         NA        NA        NA      NA        NA        NA   
+ 4         NA        NA        NA       0.03      0.04      0.02
+ 5         NA        NA        NA      NA        NA        NA   
+ 6         NA        NA        NA      NA        NA        NA   
+ 7         NA        NA        NA      NA        NA        NA   
+ 8         NA        NA        NA      NA        NA        NA   
+ 9         NA        NA        NA      NA        NA        NA   
+10         NA        NA        NA      NA        NA        NA   
+# ... with 182 more rows, and 22 more variables: `2011-est` <dbl>,
+#   `2011-hi` <dbl>, `2011-lo` <dbl>, `2012-est` <dbl>,
+#   `2012-hi` <dbl>, `2012-lo` <dbl>, `2013-est` <dbl>,
+#   `2013-hi` <dbl>, `2013-lo` <dbl>, `2014-est` <dbl>,
+#   `2014-hi` <dbl>, `2014-lo` <dbl>, `2015-est` <dbl>,
+#   `2015-hi` <dbl>, `2015-lo` <dbl>, `2016-est` <dbl>,
+#   `2016-hi` <dbl>, `2016-lo` <dbl>, `2017-est` <dbl>,
+#   `2017-hi` <dbl>, `2017-lo` <dbl>, NA <dbl>
+\end{lstlisting}
+
+This example shows that \texttt{names(table)} doesn't just give us a list of column names:
+it gives us something we can assign to when we want to rename those columns.
+It also shows us that \texttt{percents} has the wrong number of columns.
+Inspecting the tibble in the console,
+we see that the last column is full of NAs:
+
+\begin{lstlisting}
+percents[, ncol(percents)]
+\end{lstlisting}
+
+\begin{lstlisting}
+# A tibble: 192 x 1
+      NA
+   <dbl>
+ 1    NA
+ 2    NA
+ 3    NA
+ 4    NA
+ 5    NA
+ 6    NA
+ 7    NA
+ 8    NA
+ 9    NA
+10    NA
+# ... with 182 more rows
+\end{lstlisting}
+
+\begin{lstlisting}
+all(is.na(percents[,ncol(percents)]))
+\end{lstlisting}
+
+\begin{lstlisting}
+[1] TRUE
+\end{lstlisting}
+
+\noindent
+Let's relabel our data again and then drop the empty column:
+
+\begin{lstlisting}
+headers <- c(headers, "empty")
+names(percents) <- headers
+percents <- select(percents, -empty)
+percents
+\end{lstlisting}
+
+\begin{lstlisting}
+# A tibble: 192 x 27
+   `2009-est` `2009-hi` `2009-lo` `2010-est` `2010-hi` `2010-lo`
+        <dbl>     <dbl>     <dbl>      <dbl>     <dbl>     <dbl>
+ 1         NA        NA        NA      NA        NA        NA   
+ 2         NA        NA        NA      NA        NA        NA   
+ 3         NA        NA        NA      NA        NA        NA   
+ 4         NA        NA        NA       0.03      0.04      0.02
+ 5         NA        NA        NA      NA        NA        NA   
+ 6         NA        NA        NA      NA        NA        NA   
+ 7         NA        NA        NA      NA        NA        NA   
+ 8         NA        NA        NA      NA        NA        NA   
+ 9         NA        NA        NA      NA        NA        NA   
+10         NA        NA        NA      NA        NA        NA   
+# ... with 182 more rows, and 21 more variables: `2011-est` <dbl>,
+#   `2011-hi` <dbl>, `2011-lo` <dbl>, `2012-est` <dbl>,
+#   `2012-hi` <dbl>, `2012-lo` <dbl>, `2013-est` <dbl>,
+#   `2013-hi` <dbl>, `2013-lo` <dbl>, `2014-est` <dbl>,
+#   `2014-hi` <dbl>, `2014-lo` <dbl>, `2015-est` <dbl>,
+#   `2015-hi` <dbl>, `2015-lo` <dbl>, `2016-est` <dbl>,
+#   `2016-hi` <dbl>, `2016-lo` <dbl>, `2017-est` <dbl>,
+#   `2017-hi` <dbl>, `2017-lo` <dbl>
+\end{lstlisting}
+
+It's time to put the country codes back on the table,
+move the year and kind from column headers to a column with \texttt{pivot\_longer},
+and then split that column with \texttt{separate}:
+
+\begin{lstlisting}
+final <- percents %>%
+  mutate(country = countries) %>%
+  pivot_longer(-country, names_to = "year_kind", values_to = "reported") %>%
+  separate(year_kind, c("year", "kind"), sep = "-")
+final
+\end{lstlisting}
+
+\begin{lstlisting}
+# A tibble: 5,184 x 4
+   country year  kind  reported
+   <chr>   <chr> <chr>    <dbl>
+ 1 AFG     2009  est         NA
+ 2 AFG     2009  hi          NA
+ 3 AFG     2009  lo          NA
+ 4 AFG     2010  est         NA
+ 5 AFG     2010  hi          NA
+ 6 AFG     2010  lo          NA
+ 7 AFG     2011  est         NA
+ 8 AFG     2011  hi          NA
+ 9 AFG     2011  lo          NA
+10 AFG     2012  est         NA
+# ... with 5,174 more rows
+\end{lstlisting}
+
+Here's everything in one function:
+
+\begin{lstlisting}
+clean_infant_hiv <- function(filename, num_rows) {
+  # Read raw data.
+  raw <- read_csv(filename, skip = 2, na = c("-")) %>%
+    slice(1:num_rows)
+  
+  # Save the country names to reattach later.
+  countries <- raw$ISO3
+  
+  # Convert data values to percentages.
+  percents <- raw %>%
+    select(-ISO3, -Countries) %>%
+    slice(1:num_rows) %>%
+    map_dfr(str_replace, pattern = ">?(\\d+)%", replacement = "\\1") %>%
+    map_dfr(function(col) as.numeric(col) / 100)
+
+  # Change the headers on the percentages.
+  num_years <- 1 + 2017 - 2009
+  kinds <- rep(c("est", "hi", "lo"), num_years)
+  years <- map(2009:2017, rep, 3) %>% unlist()
+  headers <- c(paste(years, kinds, sep = "-"), "empty")
+  names(percents) <- headers
+  
+  # Stitch everything back together.
+  percents %>%
+    mutate(country = countries) %>%
+    pivot_longer(-country, names_to = "year_kind", values_to = "reported") %>%
+    separate(year_kind, c("year", "kind"), sep = "-")
+}
+
+clean_infant_hiv("data/infant_hiv.csv", 192)
+\end{lstlisting}
+
+\begin{lstlisting}
+Warning: Missing column names filled in: 'X30' [30]
+
+Warning: Duplicated column names deduplicated: 'Estimate' =>
+'Estimate_1' [6], 'hi' => 'hi_1' [7], 'lo' => 'lo_1' [8], 'Estimate' =>
+'Estimate_2' [9], 'hi' => 'hi_2' [10], 'lo' => 'lo_2' [11], 'Estimate' =>
+'Estimate_3' [12], 'hi' => 'hi_3' [13], 'lo' => 'lo_3' [14], 'Estimate' =>
+'Estimate_4' [15], 'hi' => 'hi_4' [16], 'lo' => 'lo_4' [17], 'Estimate' =>
+'Estimate_5' [18], 'hi' => 'hi_5' [19], 'lo' => 'lo_5' [20], 'Estimate' =>
+'Estimate_6' [21], 'hi' => 'hi_6' [22], 'lo' => 'lo_6' [23], 'Estimate' =>
+'Estimate_7' [24], 'hi' => 'hi_7' [25], 'lo' => 'lo_7' [26], 'Estimate' =>
+'Estimate_8' [27], 'hi' => 'hi_8' [28], 'lo' => 'lo_8' [29]
+
+Parsed with column specification:
+cols(
+  .default = col_character(),
+  X30 = col_logical()
+)
+
+See spec(...) for full column specifications.
+
+Warning: Expected 2 pieces. Missing pieces filled with `NA` in 192
+rows [28, 56, 84, 112, 140, 168, 196, 224, 252, 280, 308, 336, 364,
+392, 420, 448, 476, 504, 532, 560, ...].
+
+# A tibble: 5,376 x 4
+   country year  kind  reported
+   <chr>   <chr> <chr>    <dbl>
+ 1 AFG     2009  est         NA
+ 2 AFG     2009  hi          NA
+ 3 AFG     2009  lo          NA
+ 4 AFG     2010  est         NA
+ 5 AFG     2010  hi          NA
+ 6 AFG     2010  lo          NA
+ 7 AFG     2011  est         NA
+ 8 AFG     2011  hi          NA
+ 9 AFG     2011  lo          NA
+10 AFG     2012  est         NA
+# ... with 5,366 more rows
+\end{lstlisting}
+
+We're done,
+and we have learned a lot of R,
+but what we have also learned is that we make mistakes,
+and that those mistakes can easily slip past us.
+It would be \gref{g:hubris}{hubris} to believe that we will not make more as we continue to clean this data.
+What will guide us safely through these dark caverns and back into the light of day?
+
+The answer is testing.
+We must test our assumptions, our code, and our very being if we are to advance.
+R provides tools for this purpose,
+but in order to use them,
+we must venture into the greater realm of packaging in R.
+
+\section{How do we create a package?}\label{package-create}
+
+The more software you write,
+the more you realize that a programming language is mostly
+a way to build and combine software packages.
+Every widely-used language now has an online \gref{g:repository}{repository}
+from which people can download and install packages,
+and sharing ours is a great way to contribute to the community
+that has helped us on our journey.
+
+\begin{quote}
+\textbf{CRAN and Alternatives}
+
+\href{https://cran.r-project.org/}{CRAN},
+the Comprehensive R Archive Network,
+is the best place to find the packages you need.
+CRAN's famously strict rules ensure that packages run for everyone,
+but also makes package development a little more onerous than it might be.
+You can also share packages directly from GitHub,
+which many people do while packages are still in development.
+We will explore this in more detail below.
+\end{quote}
+
+To show how R packaging works,
+we will create a package called \texttt{unicefdata} to hold cleaned-up copies of
+\href{https://data.unicef.org/resources/dataset/hiv-aids-statistical-tables/}{some HIV/AIDS data}
+and \href{https://data.unicef.org/resources/dataset/maternal-health-data/}{maternal health data}
+from UNICEF.
+
+An R package must contain the following files:
+
+\begin{itemize}
+\item
+  The text file \texttt{DESCRIPTION} (with no suffix) describes what the package does,
+  who wrote it,
+  and what other packages it requires to run.
+  We will edit its contents as we go along.
+\item
+  Another file called \texttt{NAMESPACE},
+  (also without a suffix)
+  contains the names of everything \gref{g:export}{exported} from the package
+  (i.e., everything that is visible to the outside world).
+  As we will see,
+  we should leave its management in the hands of RStudio
+  and the \texttt{devtools} package we will meet below.
+\item
+  Just as \texttt{.gitignore} tells Git what files in a project to ignore,
+  \texttt{.Rbuildignore} tells R which files to include or not include in the package.
+\item
+  All of the R source for our package must go in a directory called \texttt{R};
+  sub-directories below this are not allowed.
+\item
+  As you would expect from its name,
+  the optional \texttt{data} directory contains any data we have put in our package.
+  In order for it to be loadable as part of the package,
+  the data must be saved in R's custom \texttt{.rda} format.
+  We will see how to do this below.
+\item
+  Manual pages go in the \texttt{man} directory.
+  The bad news is that they have to be in a sort-of-LaTeX format
+  that is only a bit less obscure than the runes inscribed on the ancient dagger
+  your colleague brought back from her latest archeological dig.
+  The good news is,
+  we can embed Markdown comments in our source code
+  and use a tool called \texttt{roxygen2}
+  to translate them into the required format.
+\item
+  The \texttt{tests} directory holds the package's unit tests.
+  It should contain files with names like \texttt{test\_some\_feature.R},
+  which should in turn contain functions named \texttt{test\_something\_specific}.
+  We'll have a closer look at these in Chapter~\ref{testerror}.
+\end{itemize}
+
+We can type all of this in if we want,
+but R has a very useful package called \texttt{usethis}
+to help us create and maintain packages.
+To use it,
+we load \texttt{usethis} in the console with \texttt{library(usethis)}
+and call \texttt{usethis::create\_package}
+with the path to the new package directory as an argument:
+
+\begin{lstlisting}
+usethis::create_package('~/unicefdata')
+\end{lstlisting}
+
+\begin{lstlisting}
+✔ Creating '/Users/gvwilson/unicefdata/'
+✔ Setting active project to '/Users/gvwilson/unicefdata'
+✔ Creating 'R/'
+✔ Writing 'DESCRIPTION'
+Package: unicefdata
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R (parsed):
+    * First Last <first.last@example.com> [aut, cre] (<https://orcid.org/YOUR-ORCID-ID>)
+Description: What the package does (one paragraph).
+License: What license it uses
+Encoding: UTF-8
+LazyData: true
+✔ Writing 'NAMESPACE'
+✔ Writing 'unicefdata.Rproj'
+✔ Adding '.Rproj.user' to '.gitignore'
+✔ Adding '^unicefdata\\.Rproj$', '^\\.Rproj\\.user$' to '.Rbuildignore'
+✔ Opening '/Users/gvwilson/unicefdata/' in new RStudio session
+✔ Setting active project to '<no active project>'
+\end{lstlisting}
+
+Every well-behaved package should have a README file,
+a license,
+and a Code of Conduct,
+so we will ask \texttt{usethis} to add those:
+
+\begin{lstlisting}
+usethis::use_readme_md()
+\end{lstlisting}
+
+\begin{lstlisting}
+✔ Setting active project to '/Users/gvwilson/unicefdata'
+✔ Writing 'README.md'
+● Modify 'README.md'
+\end{lstlisting}
+
+\begin{lstlisting}
+usethis::use_mit_license(name="UNICEF Data")
+\end{lstlisting}
+
+\begin{lstlisting}
+✔ Setting License field in DESCRIPTION to 'MIT + file LICENSE'
+✔ Writing 'LICENSE.md'
+✔ Adding '^LICENSE\\.md$' to '.Rbuildignore'
+✔ Writing 'LICENSE'
+\end{lstlisting}
+
+\noindent
+Note that \texttt{use\_mit\_license} creates two files:
+\texttt{LICENSE} and \texttt{LICENSE.md}.
+The rules for R packages require the former,
+but GitHub expects the latter.
+
+\begin{lstlisting}
+usethis::use_code_of_conduct()
+\end{lstlisting}
+
+\begin{lstlisting}
+✔ Setting active project to '/Users/gvwilson/r4py'
+● Don't forget to describe the code of conduct in your README:
+  Please note that the 'tidynomicon' project is released with a
+  [Contributor Code of Conduct](CODE_OF_CONDUCT.md).
+  By contributing to this project, you agree to abide by its terms.
+
+✔ Writing 'CODE_OF_CONDUCT.md'
+✔ Adding '^CODE_OF_CONDUCT\\.md$' to '.Rbuildignore'
+● Don't forget to describe the code of conduct in your README:
+  Please note that the 'unicefdata' project is released with a
+  [Contributor Code of Conduct](CODE_OF_CONDUCT.md).
+  By contributing to this project, you agree to abide by its terms.
+  [Copied to clipboard]
+\end{lstlisting}
+
+We can now edit \texttt{README.md} to be:
+
+\begin{lstlisting}
+# unicefdata
+
+unicefdata is a small R data package created for tutorial purposes.
+See `data/README.md` for the provenance of the original data.
+
+## Installation
+
+You can install unicefdata from GitHub with `devtools::install_github("gvwilson/unicefdata)`
+\end{lstlisting}
+
+and similarly edit \texttt{DESCRIPTION} so that it contains:
+
+\begin{lstlisting}
+Package: unicefdata
+Title: Small UNICEF Dataset for Tutorial Purposes
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Greg",
+           family = "Wilson",
+           role = c("aut", "cre"),
+           email = "gvwilson@third-bit.com",
+           comment = c(ORCID = "0000-0001-8659-8979"))
+Description: This package demonstrates how to share small datasets in R.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+\end{lstlisting}
+
+\noindent
+Going to the \texttt{Build} tab in RStudio and running \texttt{Check}
+tells us whether our empty package is judged sane by our strict yet impartial mechanical ``servant''.
+
+We can now put the function we wrote to clean up the infant HIV data
+in a file called \texttt{R/clean\_infant\_hiv.R}
+either by using \texttt{File...New} in RStudio
+or by running \texttt{usethis::use\_r('clean\_infant\_hiv.R')}
+(which always creates the file in the \texttt{R} directory).
+We do \emph{not} include the line that actually runs the function,
+since we don't want that to happen every time this file is loaded.
+We also fix the number of valid rows inside the function rather than passing it as a parameter,
+since it's highly unlikely that users will know or guess the value 192:
+
+\begin{lstlisting}
+clean_infant_hiv <- function(filename) {
+  # Indexes into the specific file.
+  header_rows <- 2
+  num_rows <- 192
+  first_year <- 2009
+  last_year <- 2017
+
+  # Read raw data.
+  raw <- read_csv(filename, skip = header_rows, na = c("-")) %>%
+    slice(1:num_rows)
+  
+  # Save the country names to reattach later.
+  countries <- raw$ISO3
+  
+  # Convert data values to percentages.
+  percents <- raw %>%
+    select(-ISO3, -Countries) %>%
+    slice(1:num_rows) %>%
+    map_dfr(str_replace, pattern = ">?(\\d+)%", replacement = "\\1") %>%
+    map_dfr(function(col) as.numeric(col) / 100)
+
+  # Change the headers on the percentages.
+  num_years <- 1 + last_year - first_year
+  kinds <- rep(c("est", "hi", "lo"), num_years)
+  years <- map(first_year:last_year, rep, 3) %>% unlist()
+  headers <- c(paste(years, kinds, sep = "-"), "empty")
+  names(percents) <- headers
+  
+  # Stitch everything back together.
+  percents %>%
+    mutate(country = countries) %>%
+    pivot_longer(-country, names_to = "year_kind", values_to = "reported") %>%
+    separate(year_kind, c("year", "kind"), sep = "-")
+}
+\end{lstlisting}
+
+\section{How can we document the contents of a package?}\label{package-document}
+
+\texttt{Build...Check} does a lot more checking
+now that there is some actual code for it to look at.
+Inevitably,
+these checks produce warnings:
+
+\begin{lstlisting}
+── R CMD check results ────────────────────────────── unicefdata 0.0.0.9000 ────
+Duration: 19.5s
+
+❯ checking for missing documentation entries ... WARNING
+  Undocumented code objects:
+    ‘infant_hiv’
+  All user-level objects in a package should have documentation entries.
+  See chapter ‘Writing R documentation files’ in the ‘Writing R
+  Extensions’ manual.
+
+❯ checking R code for possible problems ... NOTE
+  infant_hiv: no visible global function definition for ‘%>%’
+  infant_hiv: no visible global function definition for ‘read_csv’
+  infant_hiv: no visible global function definition for ‘slice’
+  infant_hiv: no visible global function definition for ‘select’
+  infant_hiv: no visible binding for global variable ‘ISO3’
+  infant_hiv: no visible binding for global variable ‘Countries’
+  infant_hiv: no visible global function definition for ‘map_dfr’
+  infant_hiv: no visible binding for global variable ‘str_replace’
+  infant_hiv: no visible global function definition for ‘map’
+  infant_hiv: no visible global function definition for ‘mutate’
+  infant_hiv: no visible global function definition for ‘gather’
+  infant_hiv: no visible binding for global variable ‘country’
+  infant_hiv: no visible global function definition for ‘separate’
+  infant_hiv: no visible binding for global variable ‘year_kind’
+  Undefined global functions or variables:
+    %>% Countries ISO3 country gather map map_dfr mutate read_csv select
+    separate slice str_replace year_kind
+
+0 errors ✔ | 1 warning ✖ | 1 note ✖
+Error: R CMD check found WARNINGs
+Execution halted
+\end{lstlisting}
+
+A little documentation seems like a fair request.
+For this,
+we turn to Wickham's \emph{R Packages} \cite{Wick2015}
+and Broman's \href{https://kbroman.org/pkg_primer/}{R package primer}
+for advice on writing roxygen2 documentation.
+We then return to our source file and prefix our existing code with this:
+
+\begin{lstlisting}
+#' Tidy up the infant HIV data set.
+#'
+#' @param filename path to source file
+#'
+#' @return a tibble of tidy data
+#'
+#' @export
+
+infant_hiv <- function(filename) {
+  …all the code from before…
+}
+\end{lstlisting}
+
+roxygen2 processes comment lines that start with \texttt{\#'} (hash followed by single quote).
+Putting a comment block right before a function associates that documentation with that function,
+so here we are saying that:
+
+\begin{itemize}
+\item
+  the function has a single parameter called \texttt{filename};
+\item
+  it returns a tibble of tidy data; and
+\item
+  we want it exported (i.e., we want it to be visible outside the package).
+\end{itemize}
+
+Our function is now documented,
+but we still get a warning when we run \texttt{Check}.
+After a bit more searching and experimentation,
+we discover that we need to load the \texttt{devtools} package
+and run \texttt{devtools::document()} in the console
+to regenerate documentation---it isn't done automatically.
+
+\begin{lstlisting}
+devtools::document()
+\end{lstlisting}
+
+\begin{lstlisting}
+Updating unicefdata documentation
+Updating roxygen version in /Users/gvwilson/unicefdata/DESCRIPTION
+Writing NAMESPACE
+Loading unicefdata
+Writing NAMESPACE
+Writing clean_infant_hiv.Rd
+\end{lstlisting}
+
+\noindent
+Another check confirms that our function is now documented,
+and that the \texttt{NAMESPACE} file now contains:
+
+\begin{lstlisting}
+# Generated by roxygen2: do not edit by hand
+
+export(infant_hiv)
+\end{lstlisting}
+
+The \texttt{export} directive signals that
+we want \texttt{infant\_hiv} to be visible outside the package,
+and the comment helpfully reminds us that we shouldn't edit this file ourselves,
+but should instead trust our tools to do the work for us.
+As for \texttt{man/clean\_infant\_hiv.Rd},
+it shows us more clearly than mere words ever could why we want to use \texttt{roxygen2}:
+
+\begin{lstlisting}
+% Generated by roxygen2: do not edit by hand
+% Please edit documentation in R/clean_infant_hiv.R
+\name{infant_hiv}
+\alias{infant_hiv}
+\title{Tidy up the infant HIV data set.}
+\usage{
+infant_hiv(filename)
+}
+\arguments{
+\item{filename}{path to source file}
+}
+\value{
+a tibble of tidy data
+}
+\description{
+Tidy up the infant HIV data set.
+}
+\end{lstlisting}
+
+\section{How can my package import what it needs?}
+
+Running the build again still gives us undefined function warnings
+for \texttt{read\_csv}, \texttt{\pipe}, and many others.
+The reason is that R packages are distributed as compiled bytecode
+rather than as source code\footnote{Which is how Python does it.}.
+When a package is built,
+R loads and checks the code,
+then saves the corresponding instructions.
+Our R files should therefore define functions,
+not run commands immediately,
+because if they do the latter,
+those commands will be executed every time the script loads,
+which is probably not what users will want.
+
+As a side effect,
+this means that if a package uses \texttt{load(something)},
+then that \texttt{load} command is executed \emph{while the package is being compiled},
+and \emph{not} while the compiled package is being loaded by a user after distribution.
+Thus,
+this simple and rather pointless ``package'':
+
+\begin{lstlisting}
+library(stringr)
+
+sr <- function(text, pattern, replacement) {
+  str_replace(text, pattern, replacement)
+}
+\end{lstlisting}
+
+\noindent
+probably won't work when it's loaded by a user,
+because \texttt{stringr} may not be in memory on the user's machine
+at the time \texttt{str\_replace} is called.
+
+How then can our packages use libraries?
+One way is to add import directives to the documentation for our functions
+to tell R what we depend on:
+
+\begin{lstlisting}
+#' @import dplyr
+#' @importFrom magrittr %>%
+\end{lstlisting}
+
+\noindent
+The safer way is to use \gref{g:fully-qualified-name}{fully-qualified names}
+such as \texttt{stringr::str\_replace}
+every time we call a function defined somewhere outside our package,
+as in:
+
+\begin{lstlisting}
+  percents %>%
+    dplyr::mutate(country = countries) %>%
+    tidyr::pivot_longer(cols = c(est, hi, lo), names_to = "kind", values_to = "reported")
+    tidyr::separate(year_kind, c("year", "kind"))
+\end{lstlisting}
+
+\noindent
+This changes the error to one that is slightly more confusing:
+
+\begin{lstlisting}
+── R CMD check results ────────────────────────────── unicefdata 0.0.0.9000 ────
+Duration: 21.3s
+
+❯ checking dependencies in R code ... WARNING
+  '::' or ':::' imports not declared from:
+    ‘dplyr’ ‘purrr’ ‘reader’ ‘stringr’ ‘tidyr’
+
+❯ checking R code for possible problems ... NOTE
+  infant_hiv: no visible global function definition for ‘%>%’
+  infant_hiv: no visible binding for global variable ‘ISO3’
+  infant_hiv: no visible binding for global variable ‘Countries’
+  infant_hiv: no visible binding for global variable ‘purrr’
+  infant_hiv: no visible global function definition for ‘map’
+  infant_hiv: no visible binding for global variable ‘country’
+  infant_hiv: no visible binding for global variable ‘year_kind’
+  Undefined global functions or variables:
+    %>% Countries ISO3 country map purrr year_kind
+\end{lstlisting}
+
+After more searching, experimentation, and imprecations,
+we finally add this to the \texttt{DESCRIPTION} file:
+
+\begin{lstlisting}
+Imports:
+    readr (>= 1.1.0),
+    dplyr (>= 0.7.0),
+    magrittr (>= 1.5.0),
+    purrr (>= 0.2.0),
+    rlang (>= 0.3.0),
+    stringr (>= 1.3.0),
+    tidyr (>= 0.8.3)
+\end{lstlisting}
+
+The \texttt{Imports} field in \texttt{DESCRIPTION} actually has nothing to do with importing functions:
+it just ensures that those packages are installed when this package is.
+As for the version numbers in parentheses,
+we got those by running \texttt{packageVersion("readr")} and similar commands inside RStudio
+and then rounding off.
+
+But that is still not enough,
+because the check still complains about \texttt{\pipe}.
+Luckily,
+others have ventured into this poorly-lit basement before us
+and lived to tell the tale.
+\texttt{usethis::use\_pipe()} at the console creates a file called \texttt{R/utils-pipe.R} containing:
+
+\begin{lstlisting}
+#' Pipe operator
+#'
+#' See \code{magrittr::\link[magrittr:pipe]{\%>\%}} for details.
+#'
+#' @name %>%
+#' @rdname pipe
+#' @keywords internal
+#' @export
+#' @importFrom magrittr %>%
+#' @usage lhs \%>\% rhs
+NULL
+\end{lstlisting}
+
+\begin{lstlisting}
+NULL
+\end{lstlisting}
+
+\noindent
+which is all the documentation we need to satisfy the check.
+
+All right: are we done now?
+No:
+
+\begin{lstlisting}
+checking R code for possible problems ... NOTE
+tidy_infant_hiv: no visible binding for global variable 'ISO3'
+tidy_infant_hiv: no visible binding for global variable 'Countries'
+tidy_infant_hiv: no visible binding for global variable 'country'
+tidy_infant_hiv: no visible binding for global variable 'year'
+\end{lstlisting}
+
+This is annoying but understandable.
+When the package builder is checking our code,
+it has no idea what columns are going to be in our data frames,
+so it has no way to know if \texttt{ISO3} or \texttt{Countries} will cause a problem.
+However,
+this is just a \texttt{NOTE}, not an \texttt{ERROR},
+so we can try running ``Build{\ldots}Install and Restart''
+to build our package,
+re-start our R session (so that memory is clean),
+and load our newly-created package,
+and then run \texttt{infant\_hiv("{\textasciitilde}/r4py/data/infant\_hiv.csv")}.
+
+Our data loads,
+so we return to the problem of ``variables'' that are actually column names.
+Yet more searching online tells us to add this to the documentation block for our function:
+
+\begin{lstlisting}
+#' @importFrom rlang .data
+\end{lstlisting}
+
+\noindent
+and then modify the calls that use naked column names to look like:
+
+\begin{lstlisting}
+    dplyr::select(-.data$ISO3, -.data$Countries)
+\end{lstlisting}
+
+What is this \texttt{.data} that we have invoked?
+Typing \texttt{?rlang::.data} gives us the answer:
+it is a pronoun that allows us to be explicit when we refer to an object inside the data.
+Adding this---i.e.,
+being explicity that \texttt{country} is a column of \texttt{.data}
+rather than an undefined variable---finally gives us a clean build.
+
+\section{How can we add data to a package?}
+
+But we are not done,
+because we are never \emph{truly} done,
+any more than we are ever truly safe.
+We still need to add our cleaned-up data to our package
+and document the package as a whole.
+There are three steps to this.
+
+First,
+data that \emph{isn't} meant to be loaded directly into our package should go in \texttt{inst/extdata},
+so we put the raw data file into \texttt{inst/extdata/infant\_hiv.csv}.
+The first part of the directory name, \texttt{inst}, is short for ``install'':
+when the package is installed,
+everything in this directory is bumped up a level and put in the installation directory.
+Thus,
+the installation directory will get a sub-directory called \texttt{extdata} (for ``external data''),
+and that can hold whatever we want.
+
+Next,
+we use \texttt{clean\_infant\_hiv} to put a tidy version of this data
+in a variable called \texttt{infant\_hiv},
+then call \texttt{usethis::use\_data(infant\_hiv)} to store the tibble in \texttt{data/infant\_hiv.rda}.
+We \emph{must} save the data as \texttt{.rda}, not as (for example) \texttt{.rds} or \texttt{.csv};
+only \texttt{.rda} will be automatically loaded as part of the project.
+(We can write this file using \texttt{save} if we want,
+but \texttt{usethis::use\_data} automatically uses the right format and location.)
+
+We now create a file called \texttt{R/infant\_hiv.R} to hold documentation about the dataset:
+
+\begin{lstlisting}
+#' Tidied infant HIV data.
+#'
+#' This tidy data is derived from the `infant_hiv.csv` file, which in turn is
+#' derived from an Excel spreadsheet provided by UNICEF - see the README.md file
+#' in the raw data directory for details.
+#'
+#' @format A data frame
+#' \describe{
+#'   \item{country}{Country reporting (ISO3 code)}
+#'   \item{kind}{Type of report (low, estimate, high)}
+#'   \item{reported}{Value reported (may be NA)}
+#'   \item{year}{Year reported}
+#' }
+"infant_hiv"
+\end{lstlisting}
+
+\noindent
+Everything except the last line is a roxygen2 comment block
+that describes the data in plain language,
+then uses some tags and directives to document its format and fields.
+(Note that we have also documented our data in \texttt{inst/extdata/README.md},
+but that focuses on the format and meaning of the raw data,
+not the cleaned-up version.)
+The last line is the string \texttt{"infant\_hiv"},
+i.e.,
+the name of the dataset.
+We will create one placeholder R file like this for each of our datasets,
+and each will have that dataset's name as the thing being documented.
+
+Let's run a check:
+
+\begin{lstlisting}
+    Warning: package needs dependence on R (>= 2.10)
+\end{lstlisting}
+
+\noindent
+That's easy enough to fix---we just add another section to \texttt{DESCRIPTION}
+to specify the version of R we depend on:
+
+\begin{lstlisting}
+Depends:
+    R (>= 2.10)
+\end{lstlisting}
+
+\noindent
+and voilà, a clean build.
+
+We use a similar trick to document the package as a whole:
+we create a file \texttt{R/unicefdata.R}
+(i.e., a file with exactly the same name as the package)
+and put this in it:
+
+\begin{lstlisting}
+#' Clean up and share some data from UNICEF on infant HIV rates.
+#'
+#' @author Greg Wilson, \email{gvwilson@third-bit.com}
+#' @docType package
+#' @name unicefdata
+NULL
+\end{lstlisting}
+
+That's right:
+to document the entire package,
+we document \texttt{NULL},
+which is one of the few times R uses call-by-value.
+(That's a fairly clumsy joke,
+but honestly,
+who among us is at our best at times like these?)
+
+\section{Key Points}
+
+\begin{itemize}
+\item
+  Develop data-cleaning scripts one step at a time, checking intermediate results carefully.
+\item
+  Use \texttt{read\_csv} to read CSV-formatted tabular data into a tibble.
+\item
+  Use the \texttt{skip} and \texttt{na} parameters of \texttt{read\_csv} to skip rows and interpret certain values as \texttt{NA}.
+\item
+  Use \texttt{str\_replace} to replace portions of strings that match patterns with new strings.
+\item
+  Use \texttt{is.numeric} to test if a value is a number and \texttt{as.numeric} to convert it to a number.
+\item
+  Use \texttt{map} to apply a function to every element of a vector in turn.
+\item
+  Use \texttt{map\_dfc} and \texttt{map\_dfr} to map functions across the columns and rows of a tibble.
+\item
+  Pre-allocate storage in a list for each result from a loop and fill it in rather than repeatedly extending the list.
+\item
+  An R package can contain code, data, and documentation.
+\item
+  R code is distributed as compiled bytecode in packages, not as source.
+\item
+  R packages are almost always distributed through CRAN, the Comprehensive R Archive Network.
+\item
+  Most of a project's metadata goes in a file called \texttt{DESCRIPTION}.
+\item
+  Metadata related to imports and exports goes in a file called \texttt{NAMESPACE}.
+\item
+  Add patterns to a file called \texttt{.Rbuildignore} to ignore files or directories when building a project.
+\item
+  All source code for a package must go in the \texttt{R} sub-directory.
+\item
+  \texttt{library} calls in a package's source code will \emph{not} be executed as the package is loaded after distribution.
+\item
+  Data can be included in a package by putting it in the \texttt{data} sub-directory.
+\item
+  Data must be in \texttt{.rda} format in order to be loaded as part of a package.
+\item
+  Data in other formats can be put in the \texttt{inst/extdata} directory, and will be installed when the package is installed.
+\item
+  Add comments starting with \texttt{\#'} to an R file to document functions.
+\item
+  Use roxygen2 to extract these comments to create manual pages in the \texttt{man} directory.
+\item
+  Use \texttt{@export} directives in roxygen2 comment blocks to make functions visible outside a package.
+\item
+  Add required libraries to the \texttt{Imports} section of the \texttt{DESCRIPTION} file to indicate that your package depends on them.
+\item
+  Use \texttt{package::function} to access externally-defined functions inside a package.
+\item
+  Alternatively, add \texttt{@import} directives to roxygen2 comment blocks to make external functions available inside the package.
+\item
+  Import \texttt{.data} from \texttt{rlang} and use \texttt{.data\$column} to refer to columns instead of using bare column names.
+\item
+  Create a file called R/package.R and document \texttt{NULL} to document the package as a whole.
+\item
+  Create a file called R/dataset.R and document the string `dataset' to document a dataset.
+\end{itemize}
+
+\section{Exercises}
+
+\begin{enumerate}
+
+\item
+  Modify the code in Section~\ref{package-convert-to-numbers}
+  so that it finds the last row of useful data and drops all the rows after that
+  so that we don't have to edit our data file by hand
+  to get rid of the footer.
+
+\item
+  The data cleaning in the first half of this chapter cut the country column off the table
+  and stitched it back on later.
+  Can you modify the cleanup pipelines so that \texttt{ISO3} stays attached to the table the whole time?
+  Which approach is easier to understand?
+  
+\item
+  Follow the steps in Section~\ref{package-create} to create an R package called \texttt{flipr}
+  that contains a single function \texttt{flip}
+  which takes two parameters and returns them in a vector in reversed order:
+
+\begin{lstlisting}
+flipr(1, 2)
+\end{lstlisting}
+
+\begin{lstlisting}
+[1] 2 1
+\end{lstlisting}  
+
+\item
+  Follow the steps in Section~\ref{package-document} to add documention to your \texttt{flipr} package.
+
+\item
+  Python doesn't have ``data packages'' in the same sense as R,
+  but we can build something similar.
+  Create a Python class called \texttt{DataPackage}
+  whose constructor takes a dictionary of names and paths,
+  and which loads those datasets when asked.
+  People can then subclass this to create their own data packages:
+
+\begin{lstlisting}
+import DataPackage
+
+class ColorsPackage(DataPackage):
+
+    def __init__(self):
+        super().__init__(self, {'web': 'webcolors.csv'})
+\end{lstlisting}
+
+  \noindent
+  which other people can then use like this:
+
+\begin{lstlisting}
+import ColorsPackage
+
+colors = ColorsPackage()
+standard_web_colors = colors['web']
+\end{lstlisting}
+
+  \begin{enumerate}
+    \item
+      Make sure that \texttt{ColorsPackage} only reads each dataset once:
+      if it is already in memory, it shouldn't be read a second time.
+
+    \item
+      Your implementation should automatically look for data files
+      in the directory in which the package is installed.
+      (Look at the \texttt{\_\_file\_\_} attribute of the module object
+      for help with this.)
+
+  \end{enumerate}
+
+\end{enumerate}

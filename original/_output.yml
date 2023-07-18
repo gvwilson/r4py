@@ -1,0 +1,10 @@
+bookdown::pdf_book:
+  includes:
+    in_header: rmdfiles/in-header.tex
+    before_body: rmdfiles/before-body.tex
+    after_body: rmdfiles/after-body.tex
+  latex_engine: xelatex
+  citation_package: natbib
+  template: null
+  pandoc_args: --top-level-division=chapter
+  keep_tex: yes

@@ -1,0 +1,602 @@
+# Advanced Topics {#advanced}
+
+```{r setup, include=FALSE}
+source("etc/common.R")
+```
+
+We have covered a lot of material in the previous chapters,
+but have only scratched the surface of what R can do ~~to~~ for us.
+To wrap up,
+we will look briefly at a few of its more advanced capabilities.
+
+## How can we use Python with R?
+
+You can put Python code in R Markdown documents:
+
+```{python}
+print("Hello R")
+```
+
+but how can those chunks interact with your R and vice versa?
+The answer is a package called [reticulate][reticulate]
+that provides two-way communication between Python and R.
+To use it,
+run `install.packages("reticulate")`.
+By default,
+it uses the system-default Python:
+
+```{r}
+Sys.which("python")
+```
+
+but you can configure it to use different versions,
+or to use `virtualenv` or a Conda environment—see [the document][reticulate-configure] for details.
+
+> If you want to run the Pythonic bits of code we present as well as the R,
+> run `install.packages("reticulate")`
+> and then set the `RETICULATE_PYTHON` environment variable
+> to point at the version of Python you want to use
+> *before* you launch RStudio.
+> This is necessary because you may have a system-installed version somewhere like `/usr/bin/python`
+> and a conda-managed version in `~/anaconda3/bin/python`.
+
+```{r xkcd, echo=FALSE, fig.cap="XKCD on Python Environments (from https://xkcd.com/1987/)"}
+knitr::include_graphics("figures/advanced/python-environment.png")
+```
+
+### How can we access data across languages?
+
+The most common way to use reticulate is to do some calculations in Python and then use the results in R
+or vice versa.
+To show how this works,
+let's read our infant HIV data into a Pandas data frame:
+
+```{python}
+import pandas
+data = pandas.read_csv('results/infant_hiv.csv')
+print(data.head())
+```
+
+All of our Python variables are available in our R session as part of the `py` object,
+so `py$data` is our data frame inside a chunk of R code:
+
+```{r}
+library(reticulate)
+head(py$data)
+```
+
+reticulate handles type conversions automatically,
+though there are a few tricky cases:
+for example,
+the number `9` is a float in R,
+so if you want an integer in Python,
+you have to add the trailing `L` (for "long") and write it `9L`.
+
+On the other hand,
+reticulate translates between 0-based and 1-based indexing.
+Suppose we create a character vector in R:
+
+```{r}
+elements = c('hydrogen', 'helium', 'lithium', 'beryllium')
+```
+
+Hydrogen is in position 1 in R:
+
+```{r}
+elements[1]
+```
+
+but position 0 in Python:
+
+```{python}
+print(r.elements[0])
+```
+
+Note our use of the object `r` in our Python code:
+just `py$whatever` gives us access to Python objects in R,
+`r.whatever` gives us access to R objects in Python.
+
+### How can we call functions across languages?
+
+We don't have to run Python code,
+store values in a variable,
+and then access that variable from R:
+we can call the Python directly (or vice versa).
+For example,
+we can use Python's random number generator in R as follows:
+
+```{r}
+pyrand <- import("random")
+pyrand$gauss(0, 1)
+```
+
+(There's no reason to do this—R's random number generator is just as strong—but it illustrates the point.)
+
+We can also source Python scripts.
+For example,
+suppose that `countries.py` contains this function:
+
+```{python code=readLines('countries.py'), eval=FALSE}
+```
+
+We can run that script using `source_python`:
+
+```{r}
+source_python('countries.py')
+```
+
+There is no output because all the script did was define a function.
+By default,
+that function and all other top-level variables defined in the script are now available in R:
+
+```{r}
+get_countries('results/infant_hiv.csv')
+```
+
+There is one small pothole in this.
+When the script is run,
+the special Python variable `__name__` is set to `'__main__'`,
+i.e.,
+the script thinks it is being called from the command line.
+If it includes a conditional block to handle command-line arguments like this:
+
+```{python eval=FALSE}
+if __name__ == '__main__':
+    input_file, output_files = sys.argv[1], sys.argv[2:]
+    main(input_file, output_files)
+```
+
+then that block will be executed,
+but will fail because `sys.argv` won't include anything.
+
+## How does object-oriented programming work in R?
+
+Programmers spend a great deal of their time trying to create order out of chaos,
+and the rest of their time inventing new ways to create more chaos.
+Object-oriented programming serves both needs well:
+it allows good software designers to create marvels,
+and less conscientious or less experienced ones to manufacture horrors.
+
+R has not one, not two, but at least three different frameworks for object-oriented programming.
+By far the most widely used is [S3](#S3)
+(because it was first introduced with Version 3 of S,
+the language from which R is derived).
+Unlike the approaches used in Python and similarly pedestrian languages,
+S3 does not require users to define classes.
+Instead,
+they add [attributes](glossary.html#attribute) to data,
+then write specialized versions of [generic functions](glossary.html#generic-function)
+to process data identified by those attributes.
+Since attributes can be used in other ways as well,
+we will start by exploring them.
+
+### What are attributes?
+
+Let's begin by creating a matrix containing the first few hundreds:
+
+```{r create-hundreds}
+values <- 100 * 1:9 # creates c(100, 200, ..., 900)
+m <- matrix(values, nrow = 3, ncol = 3)
+m
+```
+
+Behind the scenes,
+R continues to store our nine values as a vector.
+However,
+it adds an attribute called `class` to the vector to identify it as a matrix:
+
+```{r class-of-matrix}
+class(m)
+```
+
+and another attribute called `dim` to store its dimensions as a 2-element vector:
+
+```{r dim-of-matrix}
+dim(m)
+```
+
+An object's attributes are simply a set of name-value pairs.
+We can find out what attributes are present using `attributes` and show or set individual attributes using `attr`:
+
+```{r look-at-attributes}
+attr(m, "prospects") <- "dismal"
+attributes(m)
+```
+
+What are the type and attributes of a tibble?
+
+```{r attributes-of-tibble}
+t <- tribble(
+  ~a, ~b,
+  1, 2,
+  3, 4)
+typeof(t)
+attributes(t)
+```
+
+This tells us that a tibble is stored as a list (the first line of output),
+and that it has an attribute called `names` that stores the names of its columns,
+another called `row.names` that stores the names of its rows (a feature we should ignore),
+and three classes.
+These classes tell R what functions to search for when we are (for example)
+asking for the length of a tibble (which is the number of rows it contains):
+
+```{r length-of-tibble}
+length(t)
+```
+
+### How are classes represented?
+
+To show how classes and generic functions work together,
+let's customize the way that 2D coordinates are converted to strings.
+First,
+we create two coordinate vectors:
+
+```{r create-coordinates}
+first <- c(0.5, 0.7)
+class(first) <- "two_d"
+print(first)
+second <- c(1.3, 3.1)
+class(second) <- "two_d"
+print(second)
+```
+
+Separately, we define the behavior of `toString` for such objects:
+
+```{r tostring-twod}
+toString.two_d <- function(obj){
+  paste0("<", obj[1], ", ", obj[2], ">")
+}
+toString(first)
+toString(second)
+```
+
+S3's protocol is simple:
+given a function F and an object of class C,
+S3 looks for a function named F.C.
+If it doesn't find one,
+it looks at the object's next class (assuming it has more than one);
+once its user-assigned classes are exhausted,
+it uses whatever function the system has defined for its base type (in this case, character vector).
+We can trace this process by importing the sloop package and calling `s3_dispatch`:
+
+```{r s3-dispatch}
+library(sloop)
+s3_dispatch(toString(first))
+```
+
+Compare this with calling `toString` on a plain old character vector:
+
+```{r s3-dispatch-tostring}
+s3_dispatch(toString(c(7.1, 7.2)))
+```
+
+The specialized functions associated with a generic function like `toString` are called [methods](glossary.html#method).
+Unlike languages that require methods to be defined all together as part of a class,
+S3 allows us to add methods when and as we see fit.
+But that doesn't mean we should:
+minds confined to three dimensions of space and one of time are simply not capable of comprehending
+complex class hierarchies.
+Instead,
+we should always write three functions that work together for a class like `two_d`:
+
+- A [constructor](glossary.html#constructor) called `new_two_d`
+  that creates objects of our class.
+- An optional [validator](glossary.html#validator) called `validate_two_d`
+  that checks the consistency and correctness of an object's values.
+- An optional [helper](glossary.html#helper), simply called `two_d`,
+  that most users will call to create and validate objects.
+
+The constructor's first argument should always be the base object (in our case, the two-element vector).
+It should also have one argument for each attribute the object is to have, if any.
+Unlike matrices, our 2D points don't have any extra arguments, so our constructor needs no extra arguments.
+Crucially,
+the constructor checks the type of its arguments to ensure that the object has at least some chance of being valid.
+
+```{r new-two-d}
+new_two_d <- function(coordinates){
+  stopifnot(is.numeric(coordinates))
+  class(coordinates) <- "two_d"
+  coordinates
+}
+
+example <- new_two_d(c(4.4, -2.2))
+toString(example)
+```
+
+Validators are only needed when checks on data correctness and consistency are expensive.
+For example,
+if we were to define a class to represent sorted vectors,
+checking that each element is no less than its predecessor could take a long time for very long vectors.
+To illustrate this,
+we will check that we have exactly two coordinates;
+in real code,
+we would probably include this (inexpensive) check in the constructor.
+
+```{r validate-two-d, error=TRUE}
+validate_two_d <- function(coordinates) {
+  stopifnot(length(coordinates) == 2)
+  stopifnot(class(coordinates) == "two_d")
+}
+
+validate_two_d(example)    # should succeed silently
+validate_two_d(c(1, 3))    # should fail
+validate_two_d(c(2, 2, 2)) # should also fail
+```
+
+The third and final function in our trio provides a user-friendly way to construct objects of our new class.
+It should call the constructor and the validator (if one exists),
+but should also provide a richer set of defaults,
+better error messages,
+and so on.
+To illustrate this,
+we shall allow the user to provide either one argument (which must be a two-element vector)
+or two (which must each be numeric):
+
+```{r two-d-with-defaults}
+two_d <- function(...){
+  args <- list(...)
+  if (length(args) == 1) {
+    args <- args[[1]]    # extract original value
+  }
+  else if (length(args) == 2) {
+    args <- unlist(args) # convert list to vector
+  }
+  result <- new_two_d(args)
+  validate_two_d(result)
+  result
+}
+
+here <- two_d(10.1, 11.2)
+toString(here)
+there <- two_d(c(15.6, 16.7))
+toString(there)
+```
+
+### How does inheritance work?
+
+We said above that an object can have more than one class,
+and that S3 searches the classes in order when it wants to find a method to call.
+Methods can also trigger invocation of other methods explicitly in order to supplement,
+rather than replace,
+the behavior of other classes.
+To show how this works,
+we shall look at that classic of object-oriented design: shapes.
+(The safe kind,
+of course,
+not those whose non-Euclidean angles have placed such intolerable stress on the minds of so many of our colleagues over the years.)
+We start by defining a `polygon` class:
+
+```{r polygon-class}
+new_polygon <- function(coords, name) {
+  points <- map(coords, two_d)
+  class(points) <- "polygon"
+  attr(points, "name") <- name
+  points
+}
+
+toString.polygon <- function(poly) {
+  paste0(attr(poly, "name"), ": ", paste0(map(poly, toString), collapse = ", "))
+}
+
+right <- new_polygon(list(c(0, 0), c(1, 0), c(0, 1)), "triangle")
+toString(right)
+```
+
+Now we will add colored shapes:
+
+```{r colored-polygon}
+new_colored_polygon <- function(coords, name, color) {
+  object <- new_polygon(coords, name)
+  attr(object, "color") <- color
+  class(object) <- c("colored_polygon", class(object))
+  object
+}
+
+pinkish <- new_colored_polygon(list(c(0, 0), c(1, 0), c(1, 1)), "triangle", "roseate")
+class(pinkish)
+toString(pinkish)
+```
+
+So far so good:
+since we have not defined a method to handle colored polygons specifically,
+we get the behavior for a regular polygon.
+Let's add another method that supplements the behavior of the existing method:
+
+```{r colored-polygon-tostring}
+toString.colored_polygon <- function(poly) {
+  paste0(toString.polygon(poly), "+ color = ", attr(poly, "color"))
+}
+
+toString(pinkish)
+```
+
+In practice,
+we will almost always place all of the methods associated with a class in the same file as its constructor, validator, and helper.
+The time has finally come for us to explore projects and packages.
+
+## How can we write web applications in R?
+
+R has this awesome gnarly web programming framework called Shiny.
+It uses ~~sympathetic magic~~ ~~quantum entanglement~~ reactive variables
+to update the application's interface when data changes.
+You should, like, totally check it out.
+
+## How can we work with relational databases in R?
+
+Data frames and database tables go together as naturally as chocolate and the tears of our fallen foes.
+As in Python and other languages,
+there is a standard interface for connecting to and querying relational databases;
+each database is then supported by a package that implements that interface.
+This doesn't completely hide the differences between databases—we must still worry about
+the quirks of various SQL dialects—but it does keep the R side of things simple.
+
+This tutorial uses the SQLite database and the RSQLite interface package.
+The former is included with the latter,
+so `install.packages("RSQLite")` will give you everything you need.
+We assume that you already speak enough SQL to get yourself into trouble;
+if you do not, [this tutorial](https://swcarpentry.github.io/sql-novice-survey/) is a good place to start.
+
+### How can we get data from a database?
+
+Suppose we have a small database in `data/example.db`
+containing survey data salvaged from a series of doomed expeditions to the Antarctic in the 1920s and 1930s.
+The database contains four tables:
+
+**Person**: people who took readings.
+
+|person_id |personal |family    |
+|----------|---------|----------|
+|dyer      |William  |Dyer      |
+|pb        |Frank    |Pabodie   |
+|lake      |Anderson |Lake      |
+|roe       |Valentina|Roerich   |
+|danforth  |Frank    |Danforth  |
+
+**Site**: locations where readings were taken.
+
+|site_id |lat    |long    |
+|--------|-------|--------|
+|DR-1    |-49.85 |-128.57 |
+|DR-3    |-47.15 |-126.72 |
+|MSK-4   |-48.87 |-123.4  |
+
+**Visited**: when readings were taken at specific sites.
+
+|visit_id |site_id |dated      |
+|---------|--------|-----------|
+|619      |DR-1    |1927-02-08 |
+|622      |DR-1    |1927-02-10 |
+|734      |DR-3    |1930-01-07 |
+|735      |DR-3    |1930-01-12 |
+|751      |DR-3    |1930-02-26 |
+|752      |DR-3    |-null-     |
+|837      |MSK-4   |1932-01-14 |
+|844      |DR-1    |1932-03-22 |
+
+**Measurements**: the actual readings.
+
+|visit_id |visitor |quantity |reading |
+|---------|--------|---------|--------|
+|619      |dyer    |rad      |9.82    |
+|619      |dyer    |sal      |0.13    |
+|622      |dyer    |rad      |7.8     |
+|622      |dyer    |sal      |0.09    |
+|734      |pb      |rad      |8.41    |
+|734      |lake    |sal      |0.05    |
+|734      |pb      |temp     |-21.5   |
+|735      |pb      |rad      |7.22    |
+|735      |-null-  |sal      |0.06    |
+|735      |-null-  |temp     |-26.0   |
+|751      |pb      |rad      |4.35    |
+|751      |pb      |temp     |-18.5   |
+|751      |lake    |sal      |0.1     |
+|752      |lake    |rad      |2.19    |
+|752      |lake    |sal      |0.09    |
+|752      |lake    |temp     |-16.0   |
+|752      |roe     |sal      |41.6    |
+|837      |lake    |rad      |1.46    |
+|837      |lake    |sal      |0.21    |
+|837      |roe     |sal      |22.5    |
+|844      |roe     |rad      |11.25   |
+
+Let's get the data about the people into a data frame:
+
+```{r first-simple-query}
+library(DBI)
+db <- dbConnect(RSQLite::SQLite(), here::here("data", "example.db"))
+dbGetQuery(db, "select * from Person;")
+```
+
+That seems simple enough:
+the database connection is the first argument to `dbGetQuery`,
+the query itself is the second,
+and the result is a tibble whose column names correspond to the names of the fields in the database table.
+What if we want to parameterize our query?
+Inside the text of the query,
+we use `:name` as a placeholder for a query parameter,
+then pass a list of name-value pairs to specify what we actually want:
+
+```{r parameterized-query}
+dbGetQuery(db,
+           "select * from Measurements where quantity = :desired",
+           params = list(desired = "rad"))
+```
+
+Do *not* use `glue` or some other kind of string interpolation to construct database queries,
+as this can leave you open to [SQL injection attacks](https://en.wikipedia.org/wiki/SQL_injection)
+and other forms of digital damnation.
+
+If you expect a large set of results,
+it's best to page through them:
+
+```{r paged-query}
+results <- dbSendQuery(db, "select * from Measurements limit 15;")
+while (!dbHasCompleted(results)) {
+  chunk <- dbFetch(results, n = 3) # artificially low for tutorial purposes
+  print(chunk)
+}
+dbClearResult(results)
+```
+
+### How can we populate databases with R?
+
+Data scientists spend most of their time reading data, but someone has to create it.
+RSQLite makes it easy to map a data frame directly to a database table;
+to show how it works,
+we will create an in-memory database:
+
+```{r in-memory-create}
+colors <- tribble(
+  ~name, ~red, ~green, ~blue,
+  'black', 0, 0, 0,
+  'yellow', 255, 255, 0,
+  'aqua', 0, 255, 255,
+  'fuchsia', 255, 0, 0
+)
+db <- dbConnect(RSQLite::SQLite(), ':memory:')
+dbWriteTable(db, "colors", colors)
+```
+
+Let's see what the combination of R and SQLite has done with our data and the types thereof:
+
+```{r in-memory-fetch}
+dbGetQuery(db, "select * from colors;")
+```
+
+Good: the types have been guessed correctly.
+
+But what about dates?
+
+```{r test-with-dates}
+appointments <- tribble(
+  ~who, ~when,
+  'Dyer', '1927-03-01',
+  'Peabody', '1927-05-05'
+) %>% mutate(when = lubridate::as_date(when))
+dbWriteTable(db, "appointments", appointments)
+dbGetQuery(db, "select * from appointments;")
+```
+
+What fresh hell is this?
+After considerable trial and error,
+we discover that our dates have been returned to us as
+the number of days since January 1, 1970:
+
+```{r proof-of-madness}
+dbExecute(db,
+           "insert into appointments values('Testing', :the_date);",
+           params = list(the_date = lubridate::as_date('1971-01-01')))
+dbGetQuery(db, "select * from appointments where who = 'Testing';")
+```
+
+There is no point screaming:
+those who might pity you cannot hear,
+and those who can hear will definitely not pity you.
+
+## Key Points
+```{r, child="keypoints/advanced.md"}
+```
+
+```{r, child="etc/links.md"}
+```

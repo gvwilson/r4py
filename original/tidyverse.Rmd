@@ -1,0 +1,746 @@
+# The Tidyverse {#tidyverse}
+
+```{r setup, include=FALSE}
+source("etc/common.R")
+```
+
+There is no point in becoming fluent in Enochian if you do not then call forth a Dweller Beneath at the time of the new moon.
+Similarly,
+there is no point learning a language designed for data manipulation if you do not then bend data to your will.
+This chapter therefore looks at how to do the things that R was summoned—er, designed—to do.
+
+## How do we read data?
+
+We begin by looking at the file `results/infant_hiv.csv`,
+a tidied version of data on the percentage of infants born to women with HIV
+who received an HIV test themselves within two months of birth.
+The original data comes from the UNICEF site at <https://data.unicef.org/resources/dataset/hiv-aids-statistical-tables/>,
+and this file contains:
+
+```
+country,year,estimate,hi,lo
+AFG,2009,NA,NA,NA
+AFG,2010,NA,NA,NA
+...
+AFG,2017,NA,NA,NA
+AGO,2009,NA,NA,NA
+AGO,2010,0.03,0.04,0.02
+AGO,2011,0.05,0.07,0.04
+AGO,2012,0.06,0.08,0.05
+...
+ZWE,2016,0.71,0.88,0.62
+ZWE,2017,0.65,0.81,0.57
+```
+
+The actual file has many more rows (and no ellipses).
+It uses `NA` to show missing data rather than (for example) `-`, a space, or a blank,
+and its values are interpreted as follows:
+
+| Header   | Datatype  | Description                                 |
+|----------|-----------|---------------------------------------------|
+| country  | char      | ISO3 country code of country reporting data |
+| year     | integer   | year CE for which data reported             |
+| estimate | double/NA | estimated percentage of measurement         |
+| hi       | double/NA | high end of range                           |
+| lo       | double/NA | low end of range                            |
+
+We can load this data in Python like this:
+
+```{python python-read-csv, output.lines=10}
+import pandas as pd
+
+infant_hiv = pd.read_csv('results/infant_hiv.csv')
+print(infant_hiv)
+```
+
+The equivalent in R is to load
+the [tidyverse](glossary.html#tidyverse) collection of [packages](glossary.html#package)
+and then call the `read_csv` function.
+We will go through this in stages, since each produces output.
+
+```{r library-fail, eval=FALSE}
+library(tidyverse)
+```
+
+```
+Error in library(tidyverse) : there is no package called 'tidyverse'
+```
+
+Ah.
+We must install the tidyverse
+(but only need to do so once per machine):
+
+```{r library-install, eval=FALSE}
+install.packages("tidyverse")
+```
+
+At any time,
+we can call `sessionInfo` to find out what versions of which packages we have loaded,
+along with the version of R we're using and some other useful information:
+
+```{r session-info}
+sessionInfo()
+```
+
+We then load the library once per program:
+
+```{r unloading, echo=FALSE}
+# Detach so that loading will be echoed.
+detach(package:tidyverse)
+```
+```{r library-succeed}
+library(tidyverse)
+```
+
+Note that we give `install.packages` a string to install,
+but simply give the name of the package we want to load to `library`.
+
+Loading the tidyverse gives us eight packages.
+One of those, dplyr, defines two functions that mask standard functions in R with the same names.
+If we need the originals,
+we can always get them with their
+[fully-qualified names](glossary.html#fully-qualified-name)
+`stats::filter` and `stats::lag`.
+
+Once we have the tidyverse loaded,
+reading the file looks remarkably like reading the file:
+
+```{r r-read-csv}
+infant_hiv <- read_csv('results/infant_hiv.csv')
+```
+
+R's `read_csv` tells us more about what it has done than Pandas does.
+In particular, it guesses the data types of columns based on the first thousand values
+and then tells us what types it has inferred.
+(In a better universe,
+people would habitually use the first *two* rows of their spreadsheets for name *and units*,
+but we do not live there.)
+
+We can now look at what `read_csv` has produced.
+
+```{r show-tibble}
+infant_hiv
+```
+
+This is a [tibble](glossary.html#tibble),
+which is the tidyverse's enhanced version of R's `data.frame`.
+It organizes data into named columns,
+each having one value for each row.
+In statistical terms,
+the columns are the variables being observed
+and the rows are the actual observations.
+
+## How do we inspect data?
+
+We often have a quick look at the content of a table to remind ourselves what it contains.
+Pandas does this using methods whose names are borrowed from the Unix shell's `head` and `tail` commands:
+
+```{python py-show-head}
+print(infant_hiv.head())
+```
+
+```{python py-show-tail}
+print(infant_hiv.tail())
+```
+
+R has similarly-named functions:
+
+```{r r-show-head}
+head(infant_hiv)
+```
+
+```{r r-show-tail}
+tail(infant_hiv)
+```
+
+Let's have a closer look at that last command's output.
+Note that the row numbers printed by `tail` are [relative](glossary.html#relative-row-number) to the output,
+not [absolute](glossary.html#absolute-row-number) to the table.
+This is different from Pandas,
+which retains the original row numbers.
+
+What about overall information?
+
+```{python data-info}
+print(infant_hiv.info())
+```
+
+```{r data-summary}
+summary(infant_hiv)
+```
+
+Your display of R's summary may or may not wrap,
+depending on how large a screen the older acolytes have allowed you.
+
+## How do we index rows and columns?
+
+A Pandas DataFrame is a collection of series (also called columns),
+each containing the values of a single observed variable:
+
+```{python py-string-subscript, output.lines=NA}
+print(infant_hiv['estimate'])
+```
+
+We would get exactly the same output in Python with `infant_hiv.estimate`,
+i.e.,
+with an attribute name rather than a string subscript.
+The same tricks work in R:
+
+```{r r-string-subscript}
+infant_hiv['estimate']
+```
+
+However, R's `infant_hiv$estimate` provides all the data:
+
+```{r r-dollar-subscript, output.lines=NA}
+infant_hiv$estimate
+```
+
+Again, note that the boxed number on the left is the start index of that row.
+
+What about single values?
+Remembering to count from zero from Python and as humans do for R,
+we have:
+
+```{python py-individual-element}
+print(infant_hiv.estimate[11])
+```
+
+```{r r-individual-element}
+infant_hiv$estimate[12]
+```
+
+Ah—everything in R is a vector,
+so we get a vector of one value as an output rather than a single value.
+
+```{python py-len-individual-element, error=TRUE}
+print(len(infant_hiv.estimate[11]))
+```
+
+```{r r-len-individual-element}
+length(infant_hiv$estimate[12])
+```
+
+And yes, ranges work:
+
+```{python py-range-estimate}
+print(infant_hiv.estimate[5:15])
+```
+
+```{r r-range-estimate}
+infant_hiv$estimate[6:15]
+```
+
+Note that the upper bound is the same, because it's inclusive in R and exclusive in Python.
+Note also that nothing prevents us from selecting a range of rows that spans several countries,
+which is why selecting by row number is usually a sign of innocence, insouciance, or desperation.
+
+We can select by column number as well.
+Pandas uses the rather clumsy `object.iloc[rows, columns]` with the usual shortcut `:` for "entire range":
+
+```{python py-iloc, output.lines=NA}
+print(infant_hiv.iloc[:, 0])
+```
+
+Since this is a column, it can be indexed:
+
+```{python py-iloc-indexed}
+print(infant_hiv.iloc[:, 0][0])
+```
+
+In R, a single index is interpreted as the column index:
+
+```{r single-index-is-col}
+infant_hiv[1]
+```
+
+But notice that the output is not a vector, but another tibble (i.e., a table with N rows and one column).
+This means that adding another index does column-wise indexing on that tibble:
+
+```{r double-index-of-tibble}
+infant_hiv[1][1]
+```
+
+How then are we to get the first mention of Afghanistan?
+The answer is to use [double square brackets](glossary.html#double-square-brackets) to strip away one level of structure:
+
+```{r double-square-on-tibble, output.lines=NA}
+infant_hiv[[1]]
+```
+
+This is now a plain old vector, so it can be indexed with [single square brackets](glossary.html#single-square-brackets):
+
+```{r double-square-then-single}
+infant_hiv[[1]][1]
+```
+
+But that too is a vector, so it can of course be indexed as well (for some value of "of course"):
+
+```{r double-single-single}
+infant_hiv[[1]][1][1]
+```
+
+Thus,
+`data[1][[1]]` produces a tibble,
+then selects the first column vector from it,
+so it still gives us a vector.
+*This is not madness.*
+It is merely…differently sane.
+
+> **Subsetting Data Frames**
+>
+> When we are working with data frames (including tibbles),
+> subsetting with a single vector selects columns, not rows,
+> because data frames are stored as lists of columns.
+> This means that `df[1:2]` selects two columns from `df`.
+> However, in `df[2:3, 1:2]`, the first index selects rows, while the second selects columns.
+
+## How do we calculate basic statistics?
+
+What is the average estimate?
+We start by grabbing that column for convenience:
+
+```{python py-average-index}
+estimates = infant_hiv.estimate
+print(len(estimates))
+```
+
+```{python py-estimates-mean}
+print(estimates.mean())
+```
+
+This translates almost directly to R:
+
+```{r r-average-index}
+estimates <- infant_hiv$estimate
+length(estimates)
+```
+
+```{r r-estimates-mean}
+mean(estimates)
+```
+
+The void is always there, waiting for us…
+Let's fix this in R first by telling `mean` to drop NAs:
+
+```{r r-remove-na}
+mean(estimates, na.rm = TRUE)
+```
+
+and then try to get the statistically correct behavior in Pandas:
+
+```{python py-remove-na}
+print(estimates.mean(skipna=False))
+```
+
+Many functions in R use `na.rm` to control whether `NA`s are removed or not.
+(Remember, the `.` character is just another part of the name)
+R's default behavior is to leave `NA`s in, and then to include them in [aggregate](glossary.html#aggregation) computations.
+Python's is to get rid of missing values early and work with what's left,
+which makes translating code from one language to the next much more interesting than it might otherwise be.
+But other than that, the statistics works the same way.
+In Python, we write:
+
+```{python py-min-max-std}
+print("min", estimates.min())
+print("max", estimates.max())
+print("std", estimates.std())
+```
+
+and in R:
+
+```{r r-min-max-std}
+print(glue("min {min(estimates, na.rm = TRUE)}"))
+print(glue("max {max(estimates, na.rm = TRUE)}"))
+print(glue("sd {sd(estimates, na.rm = TRUE)}"))
+```
+
+A good use of aggregation is to check the quality of the data.
+For example,
+we can ask if there are any records where some of the estimate, the low value, or the high value are missing,
+but not all of them:
+
+```{python py-check-null}
+print((infant_hiv.hi.isnull() != infant_hiv.lo.isnull()).any())
+```
+
+```{r r-check-null}
+any(is.na(infant_hiv$hi) != is.na(infant_hiv$lo))
+```
+
+## How do we filter data?
+
+By "[filtering](glossary.html#filter)", we mean "selecting records by value".
+As discussed in Chapter \@ref(basics),
+the simplest approach is to use a vector of logical values to keep only the values corresponding to `TRUE`.
+In Python, this is:
+
+```{python py-simple-filter}
+maximal = estimates[estimates >= 0.95]
+print(len(maximal))
+```
+
+And in R:
+
+```{r r-simple-filter}
+maximal <- estimates[estimates >= 0.95]
+length(maximal)
+```
+
+The difference is unexpected.
+Let's have a closer look at the result in Python:
+
+```{python py-maximal, output.lines=NA}
+print(maximal)
+```
+
+And in R:
+
+```{r r-maximal, output.lines=NA}
+maximal
+```
+
+It appears that R has kept the unknown values in order to highlight just how little we know.
+More precisely,
+wherever there was an `NA` in the original data
+there is an `NA` in the logical vector
+and hence an `NA` in the final vector.
+Let us then turn to `which` to get a vector of indices at which a vector contains `TRUE`.
+This function does not return indices for `FALSE` or `NA`:
+
+```{r r-which}
+which(estimates >= 0.95)
+```
+
+And as a quick check:
+
+```{r r-length-which}
+length(which(estimates >= 0.95))
+```
+
+So now we can index our vector with the result of the `which`:
+
+```{r r-maximal-which}
+maximal <- estimates[which(estimates >= 0.95)]
+maximal
+```
+
+But should we do this?
+Those `NA`s are important information,
+and should not be discarded so blithely.
+What we should *really* be doing is using the tools the tidyverse provides
+rather than clever indexing tricks.
+These behave consistently across a wide scale of problems
+and encourage use of patterns that make it easier for others to understand our programs.
+
+## How do we write tidy code?
+
+The six basic data transformation operations in the tidyverse are:
+
+- `filter`: choose observations (rows) by value(s)
+- `arrange`: reorder rows
+- `select`: choose variables (columns) by name
+- `mutate`: derive new variables from existing ones
+- `group_by`: define subsets of rows for further processing
+- `summarize`: combine many values to create a single new value
+
+`filter(tibble, ...criteria...)` keeps rows that pass all of the specified criteria:
+
+```{r filter-as-function}
+filter(infant_hiv, lo > 0.5)
+```
+
+Notice that the expression is `lo > 0.5` rather than `"lo" > 0.5`.
+The latter expression would return the entire table
+because the string `"lo"` is greater than the number 0.5 everywhere.
+
+But how is it that the name `lo` can be used on its own?
+It is the name of a column, but there is no variable called `lo`.
+The answer is that R uses [lazy evaluation](glossary.html#lazy-evaluation):
+function arguments aren't evaluated until they're needed,
+so the function `filter` actually gets the expression `lo > 0.5`,
+which allows it to check that there's a column called `lo` and then use it appropriately.
+It may seem strange at first,
+but it is much tidier than `filter(data, data$lo > 0.5)` or `filter(data, "lo > 0.5")`.
+We will explore lazy evaluation further in Chapter \@ref(nse).
+
+We can make data anlaysis code more readable by using the [pipe operator](glossary.html#pipe-operator) `%>%`:
+
+```{r filter-in-pipe}
+infant_hiv %>% filter(lo > 0.5)
+```
+
+This may not seem like much of an improvement,
+but neither does a Unix pipe consisting of `cat filename.txt | head`.
+What about this?
+
+```{r filter-complex}
+filter(infant_hiv, (estimate != 0.95) & (lo > 0.5) & (hi <= (lo + 0.1)))
+```
+
+It uses the vectorized "and" operator `&` twice,
+and parsing the condition takes a human being at least a few seconds.
+Its pipelined equivalent is:
+
+```{r filter-complex-pipe}
+infant_hiv %>% filter(estimate != 0.95) %>% filter(lo > 0.5) %>% filter(hi <= (lo + 0.1))
+```
+
+Breaking the condition into stages like this often makes reading and testing much easier,
+and encourages incremental write-test-extend development.
+Let's increase the band from 10% to 20%,
+break the line the way the [tidyverse style guide][tidyverse-style] recommends
+to make the operations easier to spot,
+and order by `lo` in descending order:
+
+```{r filter-arrange}
+infant_hiv %>%
+  filter(estimate != 0.95) %>%
+  filter(lo > 0.5) %>%
+  filter(hi <= (lo + 0.2)) %>%
+  arrange(desc(lo))
+```
+
+We can now [select](glossary.html#select) the three columns we care about:
+
+```{r filter-arrange-select}
+infant_hiv %>%
+  filter(estimate != 0.95) %>%
+  filter(lo > 0.5) %>%
+  filter(hi <= (lo + 0.2)) %>%
+  arrange(desc(lo)) %>%
+  select(year, lo, hi)
+```
+
+Once again,
+we are using the unquoted column names `year`, `lo`, and `hi`
+and letting R's lazy evaluation take care of the details for us.
+
+Rather than selecting these three columns,
+we can [select *out*](glossary.html#negative-selection) the columns we're not interested in
+by negating their names.
+This leaves the columns that are kept in their original order,
+rather than putting `lo` before `hi`,
+which won't matter if we later select by name,
+but *will* if we ever want to select by position:
+
+```{r select-out}
+infant_hiv %>%
+  filter(estimate != 0.95) %>%
+  filter(lo > 0.5) %>%
+  filter(hi <= (lo + 0.2)) %>%
+  arrange(desc(lo)) %>%
+  select(-country, -estimate)
+```
+
+Giddy with power,
+we now add a column containing the difference between the low and high values.
+This can be done using either `mutate`,
+which adds new columns to the end of an existing tibble,
+or with `transmute`,
+which creates a new tibble containing only the columns we explicitly ask for.
+(There is also a function `rename` which simply renames columns.)
+Since we want to keep `hi` and `lo`,
+we decide to use `mutate`:
+
+```{r mutate-new-column}
+infant_hiv %>%
+  filter(estimate != 0.95) %>%
+  filter(lo > 0.5) %>%
+  filter(hi <= (lo + 0.2)) %>%
+  arrange(desc(lo)) %>%
+  select(-country, -estimate) %>%
+  mutate(difference = hi - lo)
+```
+
+Does the difference between high and low estimates vary by year?
+To answer that question,
+we use `group_by` to [group](glossary.html#group) records by value
+and then `summarize` to aggregate within groups.
+We might as well get rid of the `arrange` and `select` calls in our pipeline at this point,
+since we're not using them,
+and count how many records contributed to each aggregation using `n()`:
+
+```{r summarize-and-count}
+infant_hiv %>%
+  filter(estimate != 0.95) %>%
+  filter(lo > 0.5) %>%
+  filter(hi <= (lo + 0.2)) %>%
+  mutate(difference = hi - lo) %>%
+  group_by(year) %>%
+  summarize(count = n(), ave_diff = mean(year))
+```
+
+How might we do this with Pandas?
+One approach is to use a single multi-part `.query` to select data
+and store the result in a variable so that we can refer to the `hi` and `lo` columns twice
+without repeating the filtering expression.
+We then group by year and aggregate, again using strings for column names:
+
+```{python equivalent-to-pipeline}
+data = pd.read_csv('results/infant_hiv.csv')
+data = data.query('(estimate != 0.95) & (lo > 0.5) & (hi <= (lo + 0.2))')
+data = data.assign(difference = (data.hi - data.lo))
+grouped = data.groupby('year').agg({'difference' : {'ave_diff' : 'mean', 'count' : 'count'}})
+print(grouped)
+```
+
+There are other ways to tackle this problem with Pandas,
+but the tidyverse approach produces code that I find more readable.
+
+## How do we model our data?
+
+Tidying up data can be as calming and rewarding in the same way as knitting
+or rearranging the specimen jars on the shelves in your dining room-stroke-laboratory.
+Eventually,
+though,
+people want to do some statistics.
+The simplest tool for this in R is `lm`, which stands for "linear model".
+Given a formula and a data set,
+it calculates coefficients to fit that formula to that data:
+
+```{r simple-formula}
+lm(estimate ~ lo, data = infant_hiv)
+```
+
+This is telling us that `estimate` is more-or-less equal to `0.0421 + 1.0707 * lo`.
+The `~` symbol is used to separate the left and right sides of the equation,
+and as with all things tidyverse,
+lazy evaluation allows us to use variable names directly.
+In fact,
+it lets us write much more complex formulas involving functions of multiple variables.
+For example,
+we can regress `estimate` against the square roots of `lo` and `hi`
+(though there is no sound statistical reason to do so):
+
+```{r complex-formula}
+lm(estimate ~ sqrt(lo) + sqrt(hi), data = infant_hiv)
+```
+
+One important thing to note here is the way that `+` is overloaded in formulas.
+The formula `estimate ~ lo + hi` does *not* mean "regress `estimate` against the sum of `lo` and `hi`",
+but rather, "regress `estimate` against the two variables `lo` and `hi`":
+
+```{r double-regression}
+lm(estimate ~ lo + hi, data = infant_hiv)
+```
+
+If we want to regress `estimate` against the average of `lo` and `hi`
+(i.e., regress `estimate` against a single calculated variable instead of against two variables)
+we need to create a temporary column:
+
+```{r regress-temporary}
+infant_hiv %>%
+  mutate(ave_lo_hi = (lo + hi)/2) %>%
+  lm(estimate ~ ave_lo_hi, data = .)
+```
+
+Here, the call to `lm` is using the variable `.` to mean
+"the data coming in from the previous stage of the pipeline".
+Most of the functions in the tidyverse use this convention
+so that data can be passed to a function that expects it in a position other than the first.
+
+## How do we create a plot?
+
+Human being always want to see the previously unseen,
+though they are not always glad to have done so.
+The most popular tool for doing this in R is `ggplot2`,
+which implements and extends the patterns for creating charts described in @Wilk2005.
+Every chart it creates has a [geometry](glossary.html#geometry) that controls how data is displayed
+and a [mapping](glossary.html#mapping) that controls how values are represented geometrically.
+For example,
+these lines of code create a scatter plot
+showing the relationship between `lo` and `hi` values in the infant HIV data:
+
+```{r basic-plot}
+ggplot(infant_hiv) + geom_point(mapping = aes(x = lo, y = hi))
+```
+
+Looking more closely:
+
+-   The function `ggplot` creates an object to represent the chart with `infant_hiv` as the underlying data.
+-   `geom_point` specifies the geometry we want (points).
+-   Its `mapping` argument is assigned an [aesthetic](glossary.html#aesthetic)
+    that specifies `lo` is to be used as the `x` coordinate and `hi` is to be used as the `y` coordinate.
+-   The elements of the chart are combined with `+` rather than `%>%` for historical reasons.
+
+Let's create a slightly more appealing plot by dropping NAs,
+making the points semi-transparent,
+and colorizing them according to the value of `estimate`:
+
+```{r plot-after-drop}
+infant_hiv %>%
+  drop_na() %>%
+  ggplot(mapping = aes(x = lo, y = hi, color = estimate)) +
+  geom_point(alpha = 0.5) +
+  xlim(0.0, 1.0) + ylim(0.0, 1.0)
+```
+
+We set the transparency `alpha` outside the aesthetic because its value is constant for all points.
+If we set it inside `aes(...)`,
+we would be telling ggplot2 to set the transparency according to the value of the data.
+We specify the limits to the axes manually with `xlim` and `ylim` to ensure that ggplot2 includes the upper bounds:
+without this,
+all of the data would be shown,
+but the upper label "1.00" would be omitted.
+
+This plot immediately shows us that we have some outliers.
+There are far more values with `hi` equal to 0.95 than it seems there ought to be,
+and there are eight points running up the left margin that seem troubling as well.
+Let's create a new tibble that doesn't have these:
+
+```{r plot-remove-outliers}
+infant_hiv %>%
+  drop_na() %>%
+  filter(hi != 0.95) %>%
+  filter(!((lo < 0.10) & (hi > 0.25))) %>%
+  ggplot(mapping = aes(x = lo, y = hi, color = estimate)) +
+  geom_point(alpha = 0.5) +
+  xlim(0.0, 1.0) + ylim(0.0, 1.0)
+```
+
+We can add the fitted curve by including another geometry called `geom_smooth`:
+
+```{r plot-with-fit}
+infant_hiv %>%
+  drop_na() %>%
+  filter(hi != 0.95) %>%
+  filter(!((lo < 0.10) & (hi > 0.25))) %>%
+  ggplot(mapping = aes(x = lo, y = hi)) +
+  geom_point(mapping = aes(color = estimate), alpha = 0.5) +
+  geom_smooth(method = lm, color = 'red') +
+  xlim(0.0, 1.0) + ylim(0.0, 1.0)
+```
+
+But wait:
+why is this complaining about missing values?
+Some online searches lead to the discovery that
+`geom_smooth` adds virtual points to the data for plotting purposes,
+some of which lie outside the range of the actual data,
+and that setting `xlim` and `ylim` then truncates these.
+(Remember, R is differently sane…)
+The safe way to control the range of the data is to add a call to `coord_cartesian`,
+which effectively zooms in on a region of interest:
+
+```{r plot-cartesian}
+infant_hiv %>%
+  drop_na() %>%
+  filter(hi != 0.95) %>%
+  filter(!((lo < 0.10) & (hi > 0.25))) %>%
+  ggplot(mapping = aes(x = lo, y = hi)) +
+  geom_point(mapping = aes(color = estimate), alpha = 0.5) +
+  geom_smooth(method = lm, color = 'red') +
+  coord_cartesian(xlim = c(0.0, 1.0), ylim = c(0.0, 1.0))
+```
+
+## Do we need more practice with the tidyverse?
+
+Yes—yes you do,
+and Appendix \@ref(practice) is there to help you.
+
+## Key Points
+```{r keypoints, child="keypoints/tidyverse.md"}
+```
+
+```{r links, child="etc/links.md"}
+```

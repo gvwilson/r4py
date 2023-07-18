@@ -1,0 +1,84 @@
+\begin{filecontents*}{\jobname.mst}
+delim_0 "\\idxdelim"
+delim_1 "\\idxdelim"
+delim_2 "\\idxdelim"
+delim_n "\\nohyperpage{\\idxdelim}"
+delim_r "--"
+headings_flag 1
+heading_prefix "\\indexgroup{{"
+heading_suffix "}}\\nopagebreak\n"
+\end{filecontents*}
+\documentclass[cfonts]{nostarch}
+\input{settings}
+
+\title{The Tidynomicon}
+\author{Greg Wilson}
+\date{}
+
+\usepackage[italic]{mathastext}
+\usepackage{enumitem}
+\usepackage{nshyper}
+
+% ===== CONFIGURE =====
+\setlist[enumerate]{leftmargin=36pt,labelsep=0.15in} % Use normal paragraph indentation in enumerate lists
+\setlist[itemize]{leftmargin=36pt,labelsep=0.18in} % Use normal paragraph indentation in itemize lists
+\setlist[description]{leftmargin=18pt,labelwidth=0pt, labelindent=0pt, labelsep=0pt, itemindent=0pt} % Use normal paragraph indentation in description lists
+\renewcommand{\descriptionlabel}[1]{\hspace{\labelsep}\textbf{#1 \quad}} % Add em space to description label
+\setcounter{secnumdepth}{0}
+
+% ---- Index, Chicago style ----
+\renewcommand{\seename}{See}
+\renewcommand{\alsoname}{See also}
+
+\makeindex
+\makeatletter
+\def\idxdelim{\@ifnextchar{\hyperindexformat}{. }{, }}
+\makeatother
+
+\begin{document}
+
+\frontmatter
+\author{Greg Wilson}
+\title{The Tidynomicon}
+\subtitle{A brief introduction for those who count from zero}
+\nostarchlogo{nsp_logo_black_big.jpg}
+\makehalftitle
+\maketitle
+
+\input{copyright}
+\input{dedication}
+
+\brieftableofcontents
+\tableofcontents
+
+\mainmatter
+\input{chapters/01_introduction}
+\input{chapters/02_basics}
+\input{chapters/03_tidyverse}
+\input{chapters/04_rmarkdown}
+\input{chapters/05_package}
+\input{chapters/06_debt}
+\input{chapters/07_nse}
+\input{chapters/08_testerror}
+\input{chapters/09_advanced}
+
+\cleardoublepage
+
+\appendix
+\input{chapters/a_license}
+\input{chapters/b_conduct}
+\input{chapters/c_glossary}
+\input{chapters/d_norway}
+\input{chapters/e_testquestions}
+
+\backmatter
+\nocite{*}
+\bibliographystyle{plainnat}
+\bibliography{book}
+
+\printindex
+
+\input{updates}
+\input{colophon}
+
+\end{document}

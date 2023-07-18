@@ -1,0 +1,11 @@
+%% BEGIN in-header.tex
+\pdfstringdefDisableCommands{\let\MakeUppercase\relax} % from https://github.com/umasscs/umassthesis/issues/1
+\usepackage{booktabs}
+\usepackage{amsthm}
+\makeatletter
+\def\thm@space@setup{%
+  \thm@preskip=8pt plus 2pt minus 4pt
+  \thm@postskip=\thm@preskip
+}
+\makeatother
+%% END in-header.tex

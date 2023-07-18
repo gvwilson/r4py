@@ -1,0 +1,69 @@
+\chapter{Introduction}\label{introduction}
+
+Years ago,
+Patrick Burns wrote \emph{\href{https://www.burns-stat.com/documents/books/the-r-inferno/}{The R Inferno}},
+a guide to R for those who think they are in hell.
+Upon first encountering the language after two decades of using Python,
+we thought Burns was an optimist---after all,
+hell has rules.
+
+we have since realized that R does too,
+and that they are no more confusing or contradictory than those of other programming languages.
+They only appear so because R draws on a tradition unfamiliar to those of us raised with derivatives of C.
+Counting from one,
+copying data rather than modifying it,
+lazy evaluation:
+to quote \href{https://www.terrypratchettbooks.com/sir-terry/}{the other bard},
+these are not mad, just differently sane.
+
+Welcome, then, to a universe where the strange will become familiar,
+and everything familiar, strange.
+Welcome, thrice welcome, to R.
+
+\begin{figure}[h]
+  \includegraphics[width=0.8\linewidth]{figures/index/cthulhu-900x759} 
+  \caption{Speak not of madness, oh you who count from zero.}
+  \label{fig:logo}
+\end{figure}
+
+\section{Who are these lessons for?}
+
+Every lesson should be written with someone in mind \cite{Wils2019}.
+This is who we were thinking of when we wrote this one:
+
+\begin{description}
+
+\item[Andrzej]
+completed a Master's in library science five years ago
+and has done data analysis for various school boards since then.
+He learned Python doing data science courses online,
+but has no formal training in programming.
+He just joined team that uses R and R~Markdown to generate reports,
+and these lessons will show him how to translate his understanding of Python to R.
+
+\item[Padma]
+has been building dashboards for a logistics company using Django and D3
+while also doing systems administration and managing deployments.
+The company has just hired some data scientists
+who would like to rebuild some of her dashboards in Shiny.
+Padma isn't a statistician,
+but would like to learn enough about R to help the analysts
+and get their code into production.
+
+\end{description}
+
+\section{How do we get started?}
+
+You will learn as much or more from the exercise in this book as from the lessons themselves.
+To start,
+you can create an account on \href{https://rstudio.cloud/}{rstudio.cloud},
+clone \href{https://github.com/gvwilson/r4py/}{the tidynomicon project},
+and work in that.
+If you prefer to work on your own computer,
+you must \href{https://cran.rstudio.com/}{install R} and then \href{https://www.rstudio.com/products/rstudio/download/}{install RStudio}.
+We recommend that you do \emph{not} use \href{https://conda.io/}{conda},
+\href{https://brew.sh/}{brew},
+or other platform-specific package managers to do this,
+as they sometimes only install part of what you need.
+You will need additional software packages as we go along;
+each shall be named and summoned in due course.

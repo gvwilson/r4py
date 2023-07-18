@@ -1,0 +1,22 @@
+book_filename: "main"
+language:
+  ui:
+    chapter_name: "Chapter "
+delete_merged_file: false
+new_session: true
+rmd_files:
+  - index.Rmd
+  - basics.Rmd
+  - tidyverse.Rmd
+  - rmarkdown.Rmd
+  - package.Rmd
+  - nse.Rmd
+  - debt.Rmd
+  - testerror.Rmd
+  - advanced.Rmd
+  - references.Rmd
+  - appendix.Rmd
+  - LICENSE.md
+  - CODE_OF_CONDUCT.md
+  - practice.Rmd
+  - gloss.md

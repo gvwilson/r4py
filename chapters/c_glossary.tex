@@ -1,0 +1,335 @@
+\chapter{Glossary}\label{glossary}
+
+\begin{description}
+
+\gitem{g:absolute-row-number}{Absolute row number}
+The sequential index of a row in a table,
+regardless of what sections of the table is being displayed.
+
+\gitem{g:aggregation}{Aggregation}
+To combine many values into one,
+e.g.,
+by summing a set of numbers or concatenating a set of strings.
+
+\gitem{g:alias}{Alias}
+To have two (or more) references to the same physical data.
+
+\gitem{g:anonymous-function}{Anonymous function}
+A function that has not been assigned a name.
+Anonymous functions are usually quite short,
+and are usually defined where they are used,
+e.g.,
+as callbacks.
+
+\gitem{g:attribute}{Attribute}
+A name-value pair associated with an object,
+used to store metadata about the object
+such as an array's dimensions.
+
+\gitem{g:catch-exception}{Catch (exception)}
+To accept responsibility for handling an error
+or other unexpected event.
+R prefers ``\grefcross{g:handle-condition}{handling} a \grefcross{g:condition}{condition}''
+to ``catching an \grefcross{g:exception}{exception}''.
+
+\gitem{g:condition}{Condition}
+An error or other unexpected event that disrupts the normal flow of control.
+See also \grefcross{g:handle-condition}{handle}.
+
+\gitem{g:constructor}{Constructor (class)}
+A function that creates an object of a particular class.
+In the \grefcross{g:S3}{S3} object system,
+constructors are a convention rather than a requirement.
+
+\gitem{g:copy-on-modify}{Copy-on-modify}
+The practice of creating a new copy of \grefcross{g:alias}{aliased} data
+whenever there is an attempt to modify it
+so that each reference will believe theirs is the only one.
+
+\gitem{g:data-frame}{Data frame}
+A two-dimensional data structure
+in which columns represent values that were observed
+and rows represent observations.
+Each column has a unique name;
+all of the values in a particular column must be of the same type,
+but the columns themselves may be of different types.
+
+\gitem{g:double-square-brackets}{Double square brackets}
+An index enclosed in \texttt{[[...]]},
+used to return a single value of the underlying type.
+See also \grefcross{g:single-square-brackets}{single square brackets}.
+
+\gitem{g:eager-evaluation}{Eager evaluation}
+Evaluating an expression as soon as it is formed.
+
+\gitem{g:empty-vector}{Empty vector}
+A vector that contains no elements.
+Empty vectors have a type such as logical or character,
+and are \emph{not} the same as \grefcross{g:null}{null}.
+
+\gitem{g:environment}{Environment}
+A structure that stores a set of variable names and the values they refer to.
+
+\gitem{g:error}{Error}
+The most severe type of built-in \grefcross{g:condition}{condition} in R.
+
+\gitem{g:evaluating-function}{Evaluating function}
+A function that takes arguments as values.
+Most functions are evaluating functions.
+
+\gitem{g:evaluation}{Evaluation}
+The process of taking a complex expression such as \texttt{1+2*3/4}
+and turning it into a single irreducible value.
+
+\gitem{g:exception}{Exception}
+An object containing information about an error,
+or the condition that led to the error.
+R prefers ``\grefcross{g:handle-condition}{handling} a \grefcross{g:condition}{condition}''
+to ``\grefcross{g:catch-exception}{catching} an \grefcross{g:exception}{exception}''.
+
+\gitem{g:export}{Export (from a package)}
+To make something visible to programs using that package.
+Packages often contain helper functions or lookup tables that are no one's business but their own;
+requiring package authors to export things explicitly
+provides a modicum of privacy.
+
+\gitem{g:filter}{Filter}
+To choose a set of records according to the values they contain.
+
+\gitem{g:fully-qualified-name}{Fully qualified name}
+An unambiguous name of the form package::thing.
+
+\gitem{g:functional-programming}{Functional programming}
+A style of programming in which functions transform data rather than modifying it.
+Functional programming relies heavily on \grefcross{g:higher-order-function}{higher-order functions}.
+
+\gitem{g:generic-function}{Generic function}
+A collection of functions with similar purpose,
+each operating on a different class of data.
+
+\gitem{g:global-environment}{Global environment}
+The \grefcross{g:environment}{environment} that holds top-level definitions in R,
+e.g.,
+those written directly in the interpreter.
+
+\gitem{g:group}{Group}
+To divide data into subsets according to some criteria
+while leaving records in a single structure.
+
+\gitem{g:handle-condition}{Handle (a condition)}
+To accept responsibility for handling an error
+or other unexpected event.
+R prefers ``handling a \grefcross{g:condition}{condition}''
+to ``\grefcross{g:catch-exception}{catching} an \grefcross{g:exception}{exception}''.
+
+\gitem{g:helper}{Helper (class)}
+In \grefcross{g:S3}{S3},
+a function that \grefcross{g:constructor}{constructs} and \grefcross{g:validator}{validates}
+an instance of a class.
+
+\gitem{g:heterogeneous}{Heterogeneous}
+Potentially containing data of different types.
+Most vectors in R are \grefcross{g:homogeneous}{homogeneous},
+but lists can be heterogeneous.
+
+\gitem{g:higher-order-function}{Higher-order function}
+A function that takes one or more other functions as parameters.
+Higher-order functions such as \texttt{map} are commonly used in \grefcross{g:functional-programming}{functional programming}.
+
+\gitem{g:homogeneous}{Homogeneous}
+Containing data of only a single type.
+Most vectors in R are homogeneous.
+
+\gitem{g:hubris}{Hubris}
+Excessive pride or self-confidence.
+See also \grefcross{g:unit-test}{unit test} (lack of).
+
+\gitem{g:iso3-country-code}{ISO3 country code}
+A three-letter code defined by ISO 3166-1 that identifies a specific country,
+dependent territory,
+or other geopolitical entity.
+
+\gitem{g:lazy-evaluation}{Lazy evaluation}
+Delaying evaluation of an expression until the value is actually needed
+(or at least until after the point where it is first encountered).
+
+\gitem{g:list}{List}
+A vector that can contain values of many different types.
+
+\gitem{g:list-comprehension}{List comprehension}
+An expression that generates a new list from an existing one via an implicit loop.
+
+\gitem{g:logical-indexing}{Logical indexing}
+To index a vector or other structure with a vector of Booleans,
+keeping only the values that correspond to true values.
+
+\gitem{g:message}{Message}
+The least severe type of built-in \grefcross{g:condition}{condition} in R.
+
+\gitem{g:method}{Method}
+An implementation of a \grefcross{g:generic-function}{generic function}
+that handles objects of a specific class.
+
+\gitem{g:NA}{NA}
+A special value used to represent data that is Not Available.
+
+\gitem{g:name-collision}{Name collision}
+A situation in which the same name has been used in two different packages
+which are then used together,
+leading to ambiguity.
+
+\gitem{g:named-list}{Named list}
+A list whose elements have been given names.
+After assigning \texttt{list(red=128, green=0, blue=255)} to the variable \texttt{color},
+we can get the value 128 using either \texttt{color\$red} or \texttt{color[[1]]}.
+
+\gitem{g:negative-selection}{Negative selection}
+To specify the elements of a vector or other data structure that \emph{aren't} desired
+by negating their indices.
+
+\gitem{g:null}{Null}
+A special value used to represent a missing object.
+\texttt{NULL} is not the same as \texttt{NA},
+and neither is the same as an \grefcross{g:empty-vector}{empty vector}.
+
+\gitem{g:package}{Package}
+A collection of code, data, and documentation
+that can be distributed and re-used.
+
+\gitem{g:pipe-operator}{Pipe operator}
+The \texttt{\%\textgreater{}\%} used to make the output of one function the input of the next.
+
+\gitem{g:prefix-operator}{Prefix operator}
+An operator that comes before the single value it operates on,
+such as the \texttt{-} in \texttt{-(a*b)}.
+
+\gitem{g:promise}{Promise}
+A data structure used to record an unevaluated expression for lazy evaluation.
+
+\gitem{g:pull-indexing}{Pull indexing}
+Vectorized indexing in which the value at location \emph{i} in the index vector
+specifies which element of the source vector
+is being pulled into that location in the result vector,
+i.e., \texttt{result[i]\ =\ source[index[i]]}.
+See also \grefcross{g:push-indexing}{push indexing}.
+
+\gitem{g:push-indexing}{Push indexing}
+Vectorized indexing in which the value at location \emph{i} in the index vector
+specifies an element of the result vector that gets the corresponding element of the source vector,
+i.e., \texttt{result[index[i]]\ =\ source[i]}.
+Push indexing can easily produce gaps and collisions.
+See also \grefcross{g:pull-indexing}{pull indexing}.
+
+\gitem{g:quosure}{Quosure}
+A data structure containing an unevaluated expression and its environment.
+
+\gitem{g:quoting-function}{Quoting function}
+A function that is passed expressions rather than the values of those expressions.
+
+\gitem{g:raise-exception}{Raise (exception)}
+A way of indicating that something has gone wrong in a program,
+or that some other unexpected event has occurred.
+R prefers ``\grefcross{g:signal-condition}{signalling} a \grefcross{g:condition}{condition}''
+to ``raising an \grefcross{g:exception}{exception}''.
+
+\gitem{g:range-expression}{Range expression}
+An expression of the form low:high
+that is transformed a sequence of consecutive integers.
+
+\gitem{g:reactive-programming}{Reactive programming}
+A style of programming in which actions are triggered by external events.
+
+\gitem{g:reactive-variable}{Reactive variable}
+A variable whose value is automatically updated when some other value or values change.
+
+\gitem{g:recycle}{Recycle}
+To re-use values from a shorter vector in order to generate
+a sequence of the same length as a longer one.
+
+\gitem{g:regular-expression}{Regular expression}
+A pattern for matching text.
+Regular expressions are themselves written as text,
+which makes them as cryptic as they are powerful.
+
+\gitem{g:relative-row-number}{Relative row number}
+The index of a row in a displayed portion of a table,
+which may or may not be the same as the \grefcross{g:absolute-row-number}{absolut row number}
+within the table.
+
+\gitem{g:repository}{Repository}
+The place where a version control system stores a project's files
+and the metadata used to record their history.
+
+\gitem{g:S3}{S3}
+A framework for object-oriented programming in R.
+
+\gitem{g:scalar}{Scalar}
+A single value of a particular type, such as 1 or ``a''.
+Scalars don't really exist in R;
+values that appear to be scalars are actually vectors of unit length.
+
+\gitem{g:select}{Select}
+To choose entire columns from a table by name or location.
+
+\gitem{g:testing-setup}{Setup (testing)}
+Code that is automatically run once before each \grefcross{g:unit-test}{unit test}.
+
+\gitem{g:signal-condition}{Signal (a condition)}
+A way of indicating that something has gone wrong in a program,
+or that some other unexpected event has occurred.
+R prefers ``signalling a \grefcross{g:condition}{condition}''
+to ``\grefcross{g:raise-exception}{raising} an \grefcross{g:exception}{exception}''.
+
+\gitem{g:single-square-brackets}{Single square brackets}
+An index enclosed in \texttt{[...]},
+used to select a structure from another structure.
+See also \grefcross{g:double-square-brackets}{double square brackets}.
+
+\gitem{g:storage-allocation}{Storage allocation}
+Setting aside a block of memory for future use.
+
+\gitem{g:testing-teardown}{Teardown (testing)}
+Code that is automatically run once after each \grefcross{g:unit-test}{unit test}.
+
+\gitem{g:test-fixture}{Test fixture}
+The data structures, files, or other artefacts on which a \grefcross{g:unit-test}{unit test} operates.
+
+\gitem{g:test-runner}{Test runner}
+A software tool that finds and runs \grefcross{g:unit-test}{unit tests}.
+
+\gitem{g:tibble}{Tibble}
+A modern replacement for R's data frame,
+which stores tabular data in columns and rows,
+defined and used in the \grefcross{g:tidyverse}{tidyverse}.
+
+\gitem{g:tidyverse}{Tidyverse}
+A collection of R packages for operating on tabular data in consistent ways.
+
+\gitem{g:unit-test}{Unit test}
+A function that tests one aspect or property of a piece of software.
+
+\gitem{g:validator}{Validator (class)}
+A function that checks the consistency of an \grefcross{g:S3}{S3} object.
+
+\gitem{g:variable-arguments}{Variable arguments}
+In a function,
+the ability to take any number of arguments.
+R uses \texttt{...} to capture the ``extra'' arguments.
+
+\gitem{g:vector}{Vector}
+A sequence of values,
+usually of \grefcross{g:homogeneous}{homogeneous} type.
+Vectors are \emph{the} fundamental data structure in R;
+\grefcross{g:scalar}{scalars} are actually vectors of unit length.
+
+\gitem{g:vectorize}{Vectorize}
+To write code so that operations are performed on entire vectors,
+rather than element-by-element within loops.
+
+\gitem{g:warning}{Warning}
+A built-in \grefcross{g:condition}{condition} in R of middling severity.
+
+\gitem{g:widget}{Widget}
+An interactive control element in an user interface.
+
+\end{description}

@@ -1,0 +1,11 @@
+## Methods {-}
+
+Something *really important*.
+
+An [external link](https://r4py.tech).
+
+[Another link][rstudio]
+
+<!-- link table below -->
+
+[rstudio]: https://rstudio.com

@@ -1,0 +1,19 @@
+% Standard packages.
+\usepackage{natbib}
+\usepackage{nshyper}
+\usepackage{longtable}
+\usepackage{soul}
+
+% Glossary references and items have to come after hyperref package.
+\newcommand{\gref}[2]{\hyperlink{#1}{\textbf{#2}}\index{#2}}
+\newcommand{\grefdex}[3]{\hyperlink{#1}{\textbf{#2}}\index{#3}}
+\newcommand{\grefcross}[2]{\hyperlink{#1}{\textbf{#2}}}
+\newcommand{\gitem}[2]{\item[\hypertarget{#1}{#2}:]}
+
+% R pipe command.
+\newcommand{\pipe}{\%{\textgreater}\%}
+
+% ---------- For Editing ----------
+\usepackage{minitoc} % makes chapter level ToCs
+\setcounter{minitocdepth}{3} 
+\setcounter{parttocdepth}{3}

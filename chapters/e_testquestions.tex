@@ -1,0 +1,104 @@
+\chapter{Comparing Tests}\label{testquestions}
+
+Please see page~\ref{rectangle-overlap} for the background to this discussion.
+
+The function \texttt{rectangleOverlap} takes two rectangles as input
+and returns a rectangle representing their overlap.
+Each rectangle is represented by a vector $(x_{low}, y_{low}, x_{high}, y_{high})$.
+Some interesting test cases include:
+
+\begin{tabular}{l|l|l}
+  \textbf{Left}
+  & \textbf{Right}
+  & \textbf{Output}
+  \\
+
+  \texttt{0.0, 0.0, 2.0, 2.0)}
+  & \texttt{"a string"}
+  & Error.
+  \\
+  \multicolumn{3}{l}{Function only works for rectangles.}
+  \\
+
+  \texttt{0.0, 0.0, 2.0)}
+  & \texttt{1.0, 1.0, 3.0, 3.0)}
+  & Error.
+  \\
+  \multicolumn{3}{l}{Function only works for \emph{complete} rectangles.}
+  \\
+
+  \texttt{0.0, 0.0, 2.0, 2.0)}
+  & \texttt{1.0, 1.0, 3.0, 3.0)}
+  & \texttt{1.0, 1.0, 2.0, 2.0)}
+  \\
+  \multicolumn{3}{l}{Partial overlap.}
+  \\
+
+  \texttt{1.0, 1.0, 2.0, 2.0)}
+  & \texttt{1.0, 1.0, 2.0, 2.0)}
+  & \texttt{1.0, 1.0, 2.0, 2.0)}
+  \\
+  \multicolumn{3}{l}{Exact overlap.}
+  \\
+
+  \texttt{0.0, 0.0, 10.0, 10.0)}
+  & \texttt{1.0, 1.0, 3.0, 3.0)}
+  & \texttt{1.0, 1.0, 3.0, 3.0)}
+  \\
+  \multicolumn{3}{l}{Wholly contained.}
+  \\
+
+  \texttt{0.0, 0.0, 1.0, 1.0)}
+  & \texttt{1.0, 0.0, 2.0, 1.0)}
+  & \texttt{1.0, 0.0, 1.0, 1.0)}
+  \\
+  \multicolumn{3}{l}{Overlap on an edge (a zero-width rectangle).}
+  \\
+
+  \texttt{0.0, 0.0, 1.0, 1.0)}
+  & \texttt{1.0, 1.0, 2.0, 2.0)}
+  & \texttt{1.0, 1.0, 1.0, 1.0)}
+  \\
+  \multicolumn{3}{l}{Overlap at a point (a zero-area rectangle).}
+  \\
+
+  \texttt{0.0, 0.0, 1.0, 1.0)}
+  & \texttt{2.0, 2.0, 3.0, 3.0)}
+  & ??
+  \\
+  \multicolumn{3}{l}{Well this is interesting{\ldots}}
+  \\
+\end{tabular}
+
+The first two cases seem reasonable:
+the function can't be expected to work for invalid input.
+The next three are also reasonable:
+rectangles can overlap in a variety of ways,
+and we should check one instance of each.
+
+But suddenly we find ourselves paddling in deceptively calm waters
+while something tentacular stirs beneath us.
+If two rectangles align on an edge, does that count as an overlap?
+Roughly half of people would say ``yes,''
+and would then (perhaps reluctantly) agree that by implication,
+two rectangles whose corners touch ``overlap'' at a point with zero with and zero height.
+However,
+if we ask the questions in the reverse order,
+most people say that touching at a corner doesn't count,
+and then argue that touching on an edge must not count either.
+
+But if edges and corners don't count---if we insist that two rectangles overlap
+if and only if the intersection of their areas is non-empty,
+which sounds so mathematical that it must be the right---then
+what should \texttt{rectangleOverlap} return in those cases?
+What should it return when its inputs obviously and indisputably don't overlap at all?
+This isn't an error,
+any more than asking whether the word ``gibbous'' contains the letter 'a' is an error.
+Should we use \texttt{NULL} to represent an empty rectangle?
+Should we use a special value such as \texttt{c(0, 0, 0, 0)}?
+And if so,
+why those four coordinates,
+and is this consistent with what the rest of our rectangle manipulators do?
+Luckily for us,
+these questions are independent of the programming language we are using,
+and therefore outside the scope of this book.
